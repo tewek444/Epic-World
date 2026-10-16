@@ -1,0 +1,38 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "epicworld:block/glowworms",
+    "worms": "epicworld:block/glowworms"
+  },
+  "elements": [
+    {
+      "from": [0, 15.9, 0],
+      "to": [16, 15.9, 16],
+      "shade": false,
+      "faces": {
+        "down": {"uv": [0, 0, 16, 16], "texture": "#worms"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#worms"}
+      }
+    },
+    {
+      "from": [0, 13, 8],
+      "to": [16, 16, 8],
+      "shade": false,
+      "faces": {
+        "north": {"uv": [0, 0, 16, 3], "texture": "#worms"},
+        "south": {"uv": [0, 0, 16, 3], "texture": "#worms"}
+      }
+    },
+    {
+      "from": [8, 13, 0],
+      "to": [8, 16, 16],
+      "shade": false,
+      "faces": {
+        "east": {"uv": [0, 5, 16, 8], "texture": "#worms"},
+        "west": {"uv": [0, 5, 16, 8], "texture": "#worms"}
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:old_growth_birch_forest",
+    "epicworld:old_growth_pine_taiga",
+    "epicworld:old_growth_spruce_taiga"
+  ]
+}

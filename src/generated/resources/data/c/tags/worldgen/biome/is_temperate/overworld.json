@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:plains",
+    "epicworld:sunflower_plains",
+    "epicworld:forest",
+    "epicworld:flower_forest",
+    "epicworld:birch_forest",
+    "epicworld:old_growth_birch_forest",
+    "epicworld:dark_forest",
+    "epicworld:cherry_grove",
+    "epicworld:meadow",
+    "epicworld:swamp",
+    "epicworld:mangrove_swamp",
+    "epicworld:beach",
+    "epicworld:ocean",
+    "epicworld:deep_ocean",
+    "epicworld:lake",
+    "epicworld:giant_stone_forest",
+    "epicworld:marble_caves"
+  ]
+}

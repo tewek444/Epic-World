@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:desert",
+    "epicworld:plains",
+    "epicworld:savanna",
+    "epicworld:snowy_plains",
+    "epicworld:taiga",
+    "epicworld:grove"
+  ]
+}

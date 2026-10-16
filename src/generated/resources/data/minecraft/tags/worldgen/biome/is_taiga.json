@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:taiga",
+    "epicworld:snowy_taiga",
+    "epicworld:old_growth_pine_taiga",
+    "epicworld:old_growth_spruce_taiga"
+  ]
+}

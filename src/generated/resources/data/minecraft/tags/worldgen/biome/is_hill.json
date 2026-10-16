@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:windswept_hills",
+    "epicworld:windswept_forest",
+    "epicworld:windswept_gravelly_hills"
+  ]
+}

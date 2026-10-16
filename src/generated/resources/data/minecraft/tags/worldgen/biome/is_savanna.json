@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:savanna",
+    "epicworld:savanna_plateau",
+    "epicworld:windswept_savanna"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:snowy_plains",
+    "epicworld:ice_spikes",
+    "epicworld:frozen_peaks",
+    "epicworld:jagged_peaks",
+    "epicworld:snowy_slopes",
+    "epicworld:frozen_ocean",
+    "epicworld:deep_frozen_ocean",
+    "epicworld:grove",
+    "epicworld:deep_dark",
+    "epicworld:frozen_river",
+    "epicworld:snowy_taiga",
+    "epicworld:snowy_beach"
+  ]
+}

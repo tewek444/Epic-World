@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:bamboo_jungle",
+    "epicworld:mushroom_fields",
+    "epicworld:mangrove_swamp",
+    "epicworld:snowy_slopes",
+    "epicworld:frozen_peaks",
+    "epicworld:jagged_peaks",
+    "epicworld:swamp",
+    "epicworld:jungle",
+    "epicworld:willow_swamp"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:ocean",
+    "epicworld:lukewarm_ocean",
+    "epicworld:warm_ocean",
+    "epicworld:cold_ocean",
+    "epicworld:frozen_ocean",
+    "epicworld:atoll"
+  ]
+}

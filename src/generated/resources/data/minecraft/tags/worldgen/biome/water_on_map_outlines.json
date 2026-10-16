@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:swamp",
+    "epicworld:mangrove_swamp",
+    "epicworld:lake",
+    "epicworld:atoll",
+    "epicworld:stone_ring_sea",
+    "epicworld:willow_swamp"
+  ]
+}

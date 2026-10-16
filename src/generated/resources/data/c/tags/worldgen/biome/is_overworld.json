@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:lake",
+    "epicworld:atoll",
+    "epicworld:stone_ring_sea",
+    "epicworld:willow_swamp",
+    "epicworld:giant_stone_forest",
+    "epicworld:marble_caves",
+    "epicworld:glowing_caves"
+  ]
+}

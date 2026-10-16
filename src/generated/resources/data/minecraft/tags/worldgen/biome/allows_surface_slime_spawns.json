@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:swamp",
+    "epicworld:mangrove_swamp",
+    "epicworld:willow_swamp"
+  ]
+}

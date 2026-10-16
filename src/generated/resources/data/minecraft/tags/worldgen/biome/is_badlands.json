@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:badlands",
+    "epicworld:eroded_badlands",
+    "epicworld:wooded_badlands"
+  ]
+}

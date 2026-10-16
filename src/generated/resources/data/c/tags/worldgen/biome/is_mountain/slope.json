@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:snowy_slopes",
+    "epicworld:meadow",
+    "epicworld:grove",
+    "epicworld:cherry_grove"
+  ]
+}

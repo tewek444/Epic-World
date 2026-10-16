@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "epicworld:block/blue_marble",
+    "side": "epicworld:block/blue_marble",
+    "top": "epicworld:block/blue_marble"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:forest",
+    "epicworld:flower_forest",
+    "epicworld:birch_forest",
+    "epicworld:old_growth_birch_forest",
+    "epicworld:dark_forest",
+    "epicworld:grove",
+    "epicworld:giant_stone_forest"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:jungle",
+    "epicworld:bamboo_jungle",
+    "epicworld:sparse_jungle",
+    "epicworld:desert",
+    "epicworld:badlands",
+    "epicworld:wooded_badlands",
+    "epicworld:eroded_badlands",
+    "epicworld:savanna",
+    "epicworld:savanna_plateau",
+    "epicworld:windswept_savanna",
+    "epicworld:stony_peaks",
+    "epicworld:mushroom_fields",
+    "epicworld:warm_ocean",
+    "epicworld:atoll"
+  ]
+}

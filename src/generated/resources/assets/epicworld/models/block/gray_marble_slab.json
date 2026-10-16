@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "epicworld:block/gray_marble",
+    "side": "epicworld:block/gray_marble",
+    "top": "epicworld:block/gray_marble"
+  }
+}

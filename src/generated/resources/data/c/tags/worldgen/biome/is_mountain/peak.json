@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:jagged_peaks",
+    "epicworld:frozen_peaks",
+    "epicworld:stony_peaks"
+  ]
+}

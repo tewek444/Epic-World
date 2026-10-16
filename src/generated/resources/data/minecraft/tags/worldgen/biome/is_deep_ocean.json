@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:deep_frozen_ocean",
+    "epicworld:deep_cold_ocean",
+    "epicworld:deep_ocean",
+    "epicworld:deep_lukewarm_ocean"
+  ]
+}

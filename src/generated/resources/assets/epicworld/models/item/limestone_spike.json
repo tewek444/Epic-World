@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "epicworld:block/limestone_spike_up_tip"
+  }
+}

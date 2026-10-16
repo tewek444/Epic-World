@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:wooded_badlands",
+    "epicworld:savanna_plateau",
+    "epicworld:cherry_grove",
+    "epicworld:meadow"
+  ]
+}

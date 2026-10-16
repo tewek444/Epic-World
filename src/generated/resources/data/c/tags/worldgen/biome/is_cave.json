@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:lush_caves",
+    "epicworld:dripstone_caves",
+    "epicworld:deep_dark",
+    "epicworld:marble_caves",
+    "epicworld:glowing_caves"
+  ]
+}

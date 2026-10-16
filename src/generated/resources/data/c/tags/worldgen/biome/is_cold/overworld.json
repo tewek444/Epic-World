@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:taiga",
+    "epicworld:old_growth_pine_taiga",
+    "epicworld:old_growth_spruce_taiga",
+    "epicworld:windswept_hills",
+    "epicworld:windswept_gravelly_hills",
+    "epicworld:windswept_forest",
+    "epicworld:snowy_plains",
+    "epicworld:ice_spikes",
+    "epicworld:grove",
+    "epicworld:snowy_slopes",
+    "epicworld:jagged_peaks",
+    "epicworld:frozen_peaks",
+    "epicworld:stony_shore",
+    "epicworld:snowy_beach",
+    "epicworld:snowy_taiga",
+    "epicworld:frozen_river",
+    "epicworld:cold_ocean",
+    "epicworld:frozen_ocean",
+    "epicworld:deep_cold_ocean",
+    "epicworld:deep_frozen_ocean"
+  ]
+}

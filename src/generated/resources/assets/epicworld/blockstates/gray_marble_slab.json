@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "epicworld:block/gray_marble_slab"
+    },
+    "type=double": {
+      "model": "epicworld:block/gray_marble"
+    },
+    "type=top": {
+      "model": "epicworld:block/gray_marble_slab_top"
+    }
+  }
+}

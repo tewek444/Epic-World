@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:frozen_ocean",
+    "epicworld:cold_ocean",
+    "epicworld:ocean",
+    "epicworld:deep_frozen_ocean",
+    "epicworld:deep_cold_ocean",
+    "epicworld:deep_ocean",
+    "epicworld:stone_ring_sea"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "remove": [],
+  "values": [
+    "epicworld:silt",
+    "epicworld:marble",
+    "epicworld:gray_marble",
+    "epicworld:blue_marble",
+    "epicworld:veined_marble",
+    "epicworld:polished_marble",
+    "epicworld:limestone",
+    "epicworld:wet_limestone",
+    "epicworld:mossy_limestone"
+  ]
+}

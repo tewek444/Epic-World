@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:badlands",
+    "epicworld:desert",
+    "epicworld:eroded_badlands",
+    "epicworld:savanna",
+    "epicworld:savanna_plateau",
+    "epicworld:windswept_savanna",
+    "epicworld:wooded_badlands"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:taiga",
+    "epicworld:snowy_taiga",
+    "epicworld:old_growth_pine_taiga",
+    "epicworld:old_growth_spruce_taiga",
+    "epicworld:old_growth_birch_forest",
+    "epicworld:jungle",
+    "epicworld:giant_stone_forest"
+  ]
+}

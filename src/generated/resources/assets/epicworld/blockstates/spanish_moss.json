@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "tip=false": {
+      "model": "epicworld:block/spanish_moss"
+    },
+    "tip=true": {
+      "model": "epicworld:block/spanish_moss_tip"
+    }
+  }
+}

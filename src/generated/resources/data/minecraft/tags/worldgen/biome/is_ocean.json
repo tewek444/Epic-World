@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:frozen_ocean",
+    "epicworld:ocean",
+    "epicworld:cold_ocean",
+    "epicworld:lukewarm_ocean",
+    "epicworld:warm_ocean",
+    "epicworld:atoll",
+    "epicworld:stone_ring_sea"
+  ]
+}

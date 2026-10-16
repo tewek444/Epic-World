@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:mushroom_fields",
+    "epicworld:ice_spikes",
+    "epicworld:dripstone_caves",
+    "epicworld:lush_caves",
+    "epicworld:savanna",
+    "epicworld:snowy_plains",
+    "epicworld:plains",
+    "epicworld:sunflower_plains",
+    "epicworld:lake",
+    "epicworld:giant_stone_forest",
+    "epicworld:marble_caves",
+    "epicworld:glowing_caves"
+  ]
+}

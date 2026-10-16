@@ -1,0 +1,16 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:wooded_badlands",
+    "epicworld:savanna",
+    "epicworld:savanna_plateau",
+    "epicworld:sparse_jungle",
+    "epicworld:windswept_savanna",
+    "epicworld:windswept_forest",
+    "epicworld:windswept_hills",
+    "epicworld:windswept_gravelly_hills",
+    "epicworld:snowy_slopes",
+    "epicworld:jagged_peaks",
+    "epicworld:frozen_peaks"
+  ]
+}

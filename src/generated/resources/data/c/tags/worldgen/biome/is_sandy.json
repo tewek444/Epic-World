@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:desert",
+    "epicworld:badlands",
+    "epicworld:wooded_badlands",
+    "epicworld:eroded_badlands",
+    "epicworld:beach"
+  ]
+}

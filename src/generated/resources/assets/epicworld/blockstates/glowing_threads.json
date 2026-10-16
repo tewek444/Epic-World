@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "tip=false": {
+      "model": "epicworld:block/glowing_threads"
+    },
+    "tip=true": {
+      "model": "epicworld:block/glowing_threads_tip"
+    }
+  }
+}

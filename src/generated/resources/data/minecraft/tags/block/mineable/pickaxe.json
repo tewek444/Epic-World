@@ -1,0 +1,26 @@
+{
+  "remove": [],
+  "values": [
+    "epicworld:marble",
+    "epicworld:gray_marble",
+    "epicworld:blue_marble",
+    "epicworld:veined_marble",
+    "epicworld:polished_marble",
+    "epicworld:limestone",
+    "epicworld:wet_limestone",
+    "epicworld:mossy_limestone",
+    "epicworld:marble_stairs",
+    "epicworld:gray_marble_stairs",
+    "epicworld:blue_marble_stairs",
+    "epicworld:polished_marble_stairs",
+    "epicworld:marble_slab",
+    "epicworld:gray_marble_slab",
+    "epicworld:blue_marble_slab",
+    "epicworld:polished_marble_slab",
+    "epicworld:marble_wall",
+    "epicworld:gray_marble_wall",
+    "epicworld:blue_marble_wall",
+    "epicworld:polished_marble_wall",
+    "epicworld:limestone_spike"
+  ]
+}

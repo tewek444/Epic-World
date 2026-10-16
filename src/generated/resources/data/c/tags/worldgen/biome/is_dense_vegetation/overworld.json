@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:dark_forest",
+    "epicworld:old_growth_birch_forest",
+    "epicworld:old_growth_spruce_taiga",
+    "epicworld:jungle",
+    "epicworld:bamboo_jungle",
+    "epicworld:mangrove_swamp",
+    "epicworld:willow_swamp",
+    "epicworld:giant_stone_forest"
+  ]
+}

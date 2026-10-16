@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "me.nyxia.epicworld.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ClimateSamplerMixin",
+    "LevelStorageAccessMixin",
+    "LevelStorageSourceMixin",
+    "SurfaceRulesContextMixin",
+    "SurfaceSystemMixin",
+    "VillagerTypeAccessor",
+    "WorldDimensionsMixin",
+    "WorldGenRegionMixin"
+  ],
+  "client": [
+    "client.CreativeScreenAccessor",
+    "client.CreativeTabSectionsMixin",
+    "client.ItemPickerMenuMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

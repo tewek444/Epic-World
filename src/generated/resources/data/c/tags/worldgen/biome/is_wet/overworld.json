@@ -1,0 +1,16 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:swamp",
+    "epicworld:mangrove_swamp",
+    "epicworld:jungle",
+    "epicworld:bamboo_jungle",
+    "epicworld:sparse_jungle",
+    "epicworld:beach",
+    "epicworld:lush_caves",
+    "epicworld:dripstone_caves",
+    "epicworld:willow_swamp",
+    "epicworld:giant_stone_forest",
+    "epicworld:glowing_caves"
+  ]
+}

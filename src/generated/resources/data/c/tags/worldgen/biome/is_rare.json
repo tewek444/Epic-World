@@ -1,0 +1,23 @@
+{
+  "replace": false,
+  "values": [
+    "epicworld:sunflower_plains",
+    "epicworld:flower_forest",
+    "epicworld:old_growth_birch_forest",
+    "epicworld:old_growth_spruce_taiga",
+    "epicworld:bamboo_jungle",
+    "epicworld:sparse_jungle",
+    "epicworld:eroded_badlands",
+    "epicworld:savanna_plateau",
+    "epicworld:windswept_savanna",
+    "epicworld:ice_spikes",
+    "epicworld:windswept_gravelly_hills",
+    "epicworld:mushroom_fields",
+    "epicworld:deep_dark",
+    "epicworld:stone_ring_sea",
+    "epicworld:giant_stone_forest",
+    "epicworld:marble_caves",
+    "epicworld:glowing_caves",
+    "epicworld:atoll"
+  ]
+}
