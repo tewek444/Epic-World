@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": {
+      "item": "epicworld:cattail"
+    },
+    "C": {
+      "tag": "minecraft:coals"
+    }
+  },
+  "pattern": [
+    "C",
+    "#"
+  ],
+  "result": {
+    "count": 2,
+    "id": "epicworld:cattail_torch"
+  }
+}

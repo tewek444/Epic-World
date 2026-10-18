@@ -20,7 +20,7 @@ public final class SettingsToml {
             "world", Set.of("min_y", "height", "height_limit", "sea_level"),
             "biomes", Set.of("global_size_multiplier", "overrides"),
             "rivers", Set.of("enabled", "min_width", "max_width", "width_variation", "depth_scales_with_width",
-                    "connected_river_networks", "allow_mountain_gorges"),
+                    "connected_river_networks", "allow_mountain_gorges", "mountain_tunnels"),
             "lakes", Set.of("enabled", "min_radius", "max_radius", "max_depth", "depth_scales_with_size",
                     "generate_islands", "connect_to_rivers"),
             "oceans", Set.of("enabled", "coverage", "underwater_mountains", "ocean_trenches", "max_depth", "generate_islands"),
@@ -74,7 +74,8 @@ public final class SettingsToml {
                 decimal(c, "rivers.width_variation", r.widthVariation()),
                 flag(c, "rivers.depth_scales_with_width", r.depthScalesWithWidth()),
                 flag(c, "rivers.connected_river_networks", r.connectedNetworks()),
-                flag(c, "rivers.allow_mountain_gorges", r.allowMountainGorges()));
+                flag(c, "rivers.allow_mountain_gorges", r.allowMountainGorges()),
+                flag(c, "rivers.mountain_tunnels", r.mountainTunnels()));
         var l = d.lakes();
         var lakes = new EpicSettings.Lakes(flag(c, "lakes.enabled", l.enabled()),
                 integer(c, "lakes.min_radius", l.minRadius()), integer(c, "lakes.max_radius", l.maxRadius()),
@@ -242,6 +243,10 @@ public final class SettingsToml {
                 # Возможность прорезать горные массивы (ущелья); false — широкие долины в обход вершин
                 allow_mountain_gorges = %s
 
+                # Часть рек проходит сквозь горы тоннелем (обычным, светящимся или с голубыми светлячками),
+                # а не ущельем; работает вместе с allow_mountain_gorges
+                mountain_tunnels = %s
+
 
                 # ==========================================
                 # 4. LAKE GENERATION
@@ -343,7 +348,7 @@ public final class SettingsToml {
                 # Дистанция сглаживания (блоки)
                 blending_distance = %d
                 """.formatted(r.enabled(), r.minWidth(), r.maxWidth(), num(r.widthVariation()), r.depthScalesWithWidth(),
-                r.connectedNetworks(), r.allowMountainGorges(),
+                r.connectedNetworks(), r.allowMountainGorges(), r.mountainTunnels(),
                 l.enabled(), l.minRadius(), l.maxRadius(), l.maxDepth(), l.depthScalesWithSize(), l.generateIslands(), l.connectToRivers(),
                 o.enabled(), num(o.coverage()), o.underwaterMountains(), o.trenches(), o.maxDepth(), o.generateIslands(),
                 a.enabled(), a.minIslandRadius(), a.maxIslandRadius(),

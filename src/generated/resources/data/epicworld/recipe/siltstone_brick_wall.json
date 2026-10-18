@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": {
+      "item": "epicworld:siltstone_bricks"
+    }
+  },
+  "pattern": [
+    "###",
+    "###"
+  ],
+  "result": {
+    "count": 6,
+    "id": "epicworld:siltstone_brick_wall"
+  }
+}

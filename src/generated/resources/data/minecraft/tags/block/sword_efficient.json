@@ -2,6 +2,9 @@
   "remove": [],
   "values": [
     "epicworld:cattail",
-    "epicworld:spanish_moss"
+    "epicworld:spanish_moss",
+    "epicworld:dry_reeds",
+    "epicworld:reed",
+    "epicworld:dry_cattail"
   ]
 }

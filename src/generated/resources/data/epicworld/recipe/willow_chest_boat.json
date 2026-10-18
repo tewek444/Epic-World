@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "chest_boat",
+  "ingredients": [
+    {
+      "item": "minecraft:chest"
+    },
+    {
+      "item": "epicworld:willow_boat"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "epicworld:willow_chest_boat"
+  }
+}

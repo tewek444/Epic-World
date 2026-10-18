@@ -1,6 +1,7 @@
 {
   "remove": [],
   "values": [
-    "epicworld:silt"
+    "epicworld:silt",
+    "epicworld:cracked_mud"
   ]
 }

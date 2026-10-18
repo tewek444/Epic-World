@@ -66,5 +66,6 @@ final class BiomeNames {
             Map.entry("willow_swamp", new String[]{"Willow Swamp", "Ивовые топи"}),
             Map.entry("giant_stone_forest", new String[]{"Giant Stone Forest", "Каменный лес великанов"}),
             Map.entry("marble_caves", new String[]{"Marble Caves", "Мраморные пещеры"}),
-            Map.entry("glowing_caves", new String[]{"Glowing Caves", "Светящиеся пещеры"}));
+            Map.entry("glowing_caves", new String[]{"Glowing Caves", "Светящиеся пещеры"}),
+            Map.entry("dry_riverbed", new String[]{"Dry Riverbed", "Пересохшее русло"}));
 }

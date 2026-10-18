@@ -20,7 +20,7 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
 public record EpicDensity(Output output, Holder<EpicSettings> settings, DensityFunction.NoiseHolder seedNoise,
                           @Nullable TerrainEngine engine) implements DensityFunction {
     public enum Output implements StringRepresentable {
-        CONTINENTALNESS, EROSION, TEMPERATURE, HUMIDITY, HEIGHT, TERRAIN, SURFACE_TERRAIN, DEPTH, BIOME, JAGGEDNESS, ROCKS;
+        CONTINENTALNESS, EROSION, TEMPERATURE, HUMIDITY, HEIGHT, TERRAIN, SURFACE_TERRAIN, DEPTH, BIOME, JAGGEDNESS, ROCKS, TUNNEL;
 
         public static final Codec<Output> CODEC = StringRepresentable.fromEnum(Output::values);
 
@@ -47,6 +47,8 @@ public record EpicDensity(Output output, Holder<EpicSettings> settings, DensityF
         int x = context.blockX();
         int y = context.blockY();
         int z = context.blockZ();
+        // Evaluated for every block (not interpolated): skip the column lookup outside the band tunnels can occupy.
+        if (output == Output.TUNNEL && (y < engine.sea - 52 || y > engine.sea + 40)) return 1;
         var column = engine.column(x, z);
         return switch (output) {
             case CONTINENTALNESS -> Math.max(-1.5, Math.min(1.5, column.land));
@@ -54,7 +56,12 @@ public record EpicDensity(Output output, Holder<EpicSettings> settings, DensityF
             case TEMPERATURE -> Math.max(-2, Math.min(2, column.temperature * 0.5));
             case HUMIDITY -> Math.max(-2, Math.min(2, column.humidity * 0.5));
             case HEIGHT -> column.height;
-            case SURFACE_TERRAIN -> SCALE * (column.height - y);
+            // Preliminary surface for aquifers. Under water it is placed a cell lower: a sea floor less than 8 blocks deep
+            // otherwise made the aquifer treat the column as dry land with its own lower water table, which left air
+            // pockets under a stone barrier right next to the sea.
+            // The same for river tunnels: their water must be the open river's, not an aquifer behind a barrier.
+            case SURFACE_TERRAIN -> SCALE * ((column.height < engine.sea ? column.height - 8
+                    : column.tunnelKind > 0 ? Math.min(column.height, column.tunnelFloor - 8) : column.height) - y);
             case TERRAIN -> SCALE * (column.height - y);
             case ROCKS -> {
                 // Stone rings and pillars, added after caves so caves never cut them into floating pieces.
@@ -62,6 +69,8 @@ public record EpicDensity(Output output, Holder<EpicSettings> settings, DensityF
                 double distance = engine.formationDistance(x, y, z, column);
                 yield distance < 40 ? Math.max(-1, Math.min(1, -distance * 0.12)) : -1;
             }
+            // River tunnels: air inside, no effect elsewhere (combined with min).
+            case TUNNEL -> column.tunnelKind > 0 && y > column.tunnelFloor && y < column.tunnelTop ? -1 : 1;
             case DEPTH -> (column.height - y) / 128.0;
             case BIOME -> engine.biomeAt(x, y, z);
             case JAGGEDNESS -> column.jag;
@@ -97,7 +106,7 @@ public record EpicDensity(Output output, Holder<EpicSettings> settings, DensityF
             case TERRAIN, SURFACE_TERRAIN -> -SCALE * 4096;
             case DEPTH -> -32;
             case BIOME, JAGGEDNESS -> 0;
-            case ROCKS -> -1;
+            case ROCKS, TUNNEL -> -1;
         };
     }
 
@@ -105,7 +114,7 @@ public record EpicDensity(Output output, Holder<EpicSettings> settings, DensityF
     public double maxValue() {
         return switch (output) {
             case CONTINENTALNESS -> 1.5;
-            case EROSION, JAGGEDNESS, ROCKS -> 1;
+            case EROSION, JAGGEDNESS, ROCKS, TUNNEL -> 1;
             case TEMPERATURE, HUMIDITY -> 2;
             case HEIGHT -> 4096;
             case TERRAIN, SURFACE_TERRAIN -> SCALE * 4096;

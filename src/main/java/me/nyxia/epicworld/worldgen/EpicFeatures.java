@@ -66,6 +66,8 @@ final class EpicFeatures {
     static final ResourceKey<ConfiguredFeature<?, ?>> SILT_DISK = configuredKey("silt_disk");
     static final ResourceKey<ConfiguredFeature<?, ?>> MARBLE_DECOR = configuredKey("marble_cave_decor");
     static final ResourceKey<ConfiguredFeature<?, ?>> GLOWING_DECOR = configuredKey("glowing_cave_decor");
+    static final ResourceKey<ConfiguredFeature<?, ?>> DRY_REEDS_PATCH = configuredKey("dry_reeds_patch");
+    static final ResourceKey<ConfiguredFeature<?, ?>> RING_VINES_DECOR = configuredKey("stone_ring_vines");
 
     static final ResourceKey<PlacedFeature> WILLOWS = placedKey("trees_willow");
     static final ResourceKey<PlacedFeature> HUGE_WILLOWS = placedKey("trees_huge_willow");
@@ -77,6 +79,8 @@ final class EpicFeatures {
     static final ResourceKey<PlacedFeature> PILLAR_SPRINGS = placedKey("stone_forest_springs");
     static final ResourceKey<PlacedFeature> WILLOW_FERNS = placedKey("willow_swamp_ferns");
     static final ResourceKey<PlacedFeature> WILLOW_GRASS = placedKey("willow_swamp_grass");
+    static final ResourceKey<PlacedFeature> DRY_REEDS = placedKey("patch_dry_reeds");
+    static final ResourceKey<PlacedFeature> RING_VINES = placedKey("stone_ring_vines");
 
     static void configured(BootstrapContext<ConfiguredFeature<?, ?>> context) {
         var hangingLeaves = BlockStateProvider.simple(ModBlocks.WILLOW_LEAVES.get().defaultBlockState().setValue(LeavesBlock.PERSISTENT, true));
@@ -85,13 +89,16 @@ final class EpicFeatures {
                 BlockStateProvider.simple(ModBlocks.WILLOW_LOG.get()), new FancyTrunkPlacer(5, 3, 0),
                 BlockStateProvider.simple(ModBlocks.WILLOW_LEAVES.get()), new FancyFoliagePlacer(ConstantInt.of(2), ConstantInt.of(3), 4),
                 new TwoLayersFeatureSize(0, 0, 0, OptionalInt.of(4)))
-                .decorators(List.of(new HangingDecorator(hangingLeaves, 0.55f, 5), new HangingDecorator(moss, 0.22f, 4)))
+                .decorators(List.of(new HangingDecorator(hangingLeaves, 0.3f, 3), new HangingDecorator(moss, 0.25f, 4)))
                 .ignoreVines().build()));
+        // Bald-cypress-like: a thick 2x2 trunk and a broad, flat crown hung with leaves and Spanish moss.
         context.register(ModBlocks.HUGE_WILLOW_TREE, new ConfiguredFeature<>(Feature.TREE, new TreeConfiguration.TreeConfigurationBuilder(
-                BlockStateProvider.simple(ModBlocks.WILLOW_LOG.get()), new FancyTrunkPlacer(11, 6, 2),
-                BlockStateProvider.simple(ModBlocks.WILLOW_LEAVES.get()), new FancyFoliagePlacer(ConstantInt.of(3), ConstantInt.of(4), 5),
-                new TwoLayersFeatureSize(0, 0, 0, OptionalInt.of(5)))
-                .decorators(List.of(new HangingDecorator(hangingLeaves, 0.65f, 8), new HangingDecorator(moss, 0.35f, 6)))
+                BlockStateProvider.simple(ModBlocks.WILLOW_LOG.get()),
+                new net.minecraft.world.level.levelgen.feature.trunkplacers.DarkOakTrunkPlacer(10, 4, 3),
+                BlockStateProvider.simple(ModBlocks.WILLOW_LEAVES.get()),
+                new net.minecraft.world.level.levelgen.feature.foliageplacers.DarkOakFoliagePlacer(ConstantInt.of(0), ConstantInt.of(0)),
+                new net.minecraft.world.level.levelgen.feature.featuresize.ThreeLayersFeatureSize(1, 1, 0, 1, 2, OptionalInt.empty()))
+                .decorators(List.of(new HangingDecorator(hangingLeaves, 0.45f, 5), new HangingDecorator(moss, 0.4f, 7)))
                 .ignoreVines().build()));
 
         var water = BlockPredicate.matchesFluids(Fluids.WATER);
@@ -100,7 +107,9 @@ final class EpicFeatures {
                 BlockPredicate.matchesFluids(new Vec3i(0, -1, -1), Fluids.WATER));
         var cattail = ModBlocks.CATTAIL.get().defaultBlockState();
         context.register(CATTAIL_PATCH, new ConfiguredFeature<>(Feature.RANDOM_PATCH, new RandomPatchConfiguration(48, 7, 2,
-                PlacementUtils.filtered(Feature.SIMPLE_BLOCK, new SimpleBlockConfiguration(BlockStateProvider.simple(cattail)),
+                PlacementUtils.filtered(Feature.SIMPLE_BLOCK, new SimpleBlockConfiguration(new net.minecraft.world.level.levelgen.feature.stateproviders.WeightedStateProvider(
+                        net.minecraft.util.random.SimpleWeightedRandomList.<net.minecraft.world.level.block.state.BlockState>builder()
+                                .add(cattail, 3).add(ModBlocks.REED.get().defaultBlockState(), 2).build())),
                         BlockPredicate.allOf(BlockPredicate.replaceable(), nearWater, BlockPredicate.wouldSurvive(cattail, Vec3i.ZERO))))));
         var grass = ModBlocks.WATER_GRASS.get().defaultBlockState();
         context.register(WATER_GRASS_PATCH, new ConfiguredFeature<>(Feature.RANDOM_PATCH, new RandomPatchConfiguration(64, 8, 3,
@@ -112,18 +121,30 @@ final class EpicFeatures {
                 UniformInt.of(2, 5), 2)));
         context.register(MARBLE_DECOR, new ConfiguredFeature<>(EpicFeatureTypes.CAVE_DECOR.get(), new CaveDecorFeature.Config(CaveDecorFeature.Kind.MARBLE)));
         context.register(GLOWING_DECOR, new ConfiguredFeature<>(EpicFeatureTypes.CAVE_DECOR.get(), new CaveDecorFeature.Config(CaveDecorFeature.Kind.GLOWING)));
+        context.register(RING_VINES_DECOR, new ConfiguredFeature<>(EpicFeatureTypes.CAVE_DECOR.get(), new CaveDecorFeature.Config(CaveDecorFeature.Kind.RING_VINES)));
+        var reeds = ModBlocks.DRY_REEDS.get().defaultBlockState();
+        context.register(DRY_REEDS_PATCH, new ConfiguredFeature<>(Feature.RANDOM_PATCH, new RandomPatchConfiguration(40, 7, 2,
+                PlacementUtils.filtered(Feature.SIMPLE_BLOCK, new SimpleBlockConfiguration(
+                        new net.minecraft.world.level.levelgen.feature.stateproviders.WeightedStateProvider(
+                                net.minecraft.util.random.SimpleWeightedRandomList.<net.minecraft.world.level.block.state.BlockState>builder()
+                                        .add(reeds, 3).add(ModBlocks.DRY_CATTAIL.get().defaultBlockState(), 2).build())),
+                        BlockPredicate.allOf(BlockPredicate.replaceable(), BlockPredicate.wouldSurvive(reeds, Vec3i.ZERO))))));
     }
 
     static void placed(BootstrapContext<PlacedFeature> context, EpicSettings settings) {
         var features = context.lookup(Registries.CONFIGURED_FEATURE);
         var sapling = ModBlocks.WILLOW_SAPLING.get().defaultBlockState();
         context.register(WILLOWS, new PlacedFeature(features.getOrThrow(ModBlocks.WILLOW_TREE), List.of(
-                PlacementUtils.countExtra(4, 0.5f, 2), InSquarePlacement.spread(), SurfaceWaterDepthFilter.forMaxDepth(2),
+                PlacementUtils.countExtra(1, 0.5f, 2), InSquarePlacement.spread(), SurfaceWaterDepthFilter.forMaxDepth(2),
                 PlacementUtils.HEIGHTMAP_OCEAN_FLOOR, BiomeFilter.biome(),
                 BlockPredicateFilter.forPredicate(BlockPredicate.wouldSurvive(sapling, Vec3i.ZERO)))));
         context.register(HUGE_WILLOWS, new PlacedFeature(features.getOrThrow(ModBlocks.HUGE_WILLOW_TREE), List.of(
-                RarityFilter.onAverageOnceEvery(2), InSquarePlacement.spread(), SurfaceWaterDepthFilter.forMaxDepth(1),
+                RarityFilter.onAverageOnceEvery(2), InSquarePlacement.spread(), SurfaceWaterDepthFilter.forMaxDepth(2),
                 PlacementUtils.HEIGHTMAP_OCEAN_FLOOR, BiomeFilter.biome(),
+                // The 2x2 trunk needs ground under all four corners at the same level, or part of it stands on water.
+                BlockPredicateFilter.forPredicate(BlockPredicate.allOf(BlockPredicate.solid(new Vec3i(0, -1, 0)),
+                        BlockPredicate.solid(new Vec3i(1, -1, 0)), BlockPredicate.solid(new Vec3i(0, -1, 1)),
+                        BlockPredicate.solid(new Vec3i(1, -1, 1)))),
                 BlockPredicateFilter.forPredicate(BlockPredicate.wouldSurvive(sapling, Vec3i.ZERO)))));
         context.register(CATTAILS, new PlacedFeature(features.getOrThrow(CATTAIL_PATCH), List.of(
                 CountPlacement.of(5), InSquarePlacement.spread(), PlacementUtils.HEIGHTMAP_WORLD_SURFACE, BiomeFilter.biome())));
@@ -133,12 +154,13 @@ final class EpicFeatures {
                 CountPlacement.of(3), InSquarePlacement.spread(), PlacementUtils.HEIGHTMAP_TOP_SOLID, BiomeFilter.biome())));
         var w = settings.world();
         int caveTop = Math.max(w.minY() + 24, w.seaLevel() - 40);
-        context.register(MARBLE_CAVES, new PlacedFeature(features.getOrThrow(MARBLE_DECOR), List.of(
-                InSquarePlacement.spread(), HeightRangePlacement.uniform(VerticalAnchor.absolute(w.minY() + 12), VerticalAnchor.absolute(caveTop)),
-                BiomeFilter.biome())));
-        context.register(GLOWING_CAVES, new PlacedFeature(features.getOrThrow(GLOWING_DECOR), List.of(
-                InSquarePlacement.spread(), HeightRangePlacement.uniform(VerticalAnchor.absolute(w.minY() + 12), VerticalAnchor.absolute(caveTop)),
-                BiomeFilter.biome())));
+        // Once per chunk that contains a marble lake; the feature finds the biome itself.
+        context.register(MARBLE_CAVES, new PlacedFeature(features.getOrThrow(MARBLE_DECOR), List.of(InSquarePlacement.spread())));
+        // Once per chunk that contains the biome (deep caves or a river tunnel); the feature finds the biome itself.
+        context.register(GLOWING_CAVES, new PlacedFeature(features.getOrThrow(GLOWING_DECOR), List.of(InSquarePlacement.spread())));
+        context.register(RING_VINES, new PlacedFeature(features.getOrThrow(RING_VINES_DECOR), List.of(InSquarePlacement.spread())));
+        context.register(DRY_REEDS, new PlacedFeature(features.getOrThrow(DRY_REEDS_PATCH), List.of(
+                CountPlacement.of(3), InSquarePlacement.spread(), PlacementUtils.HEIGHTMAP_WORLD_SURFACE, BiomeFilter.biome())));
         context.register(WILLOW_FERNS, new PlacedFeature(features.getOrThrow(net.minecraft.data.worldgen.features.VegetationFeatures.PATCH_LARGE_FERN),
                 List.of(CountPlacement.of(3), InSquarePlacement.spread(), PlacementUtils.HEIGHTMAP, BiomeFilter.biome())));
         context.register(WILLOW_GRASS, new PlacedFeature(features.getOrThrow(net.minecraft.data.worldgen.features.VegetationFeatures.PATCH_TAIGA_GRASS),
@@ -157,6 +179,17 @@ final class EpicFeatures {
     private static BiomeGenerationSettings derive(BootstrapContext<Biome> context, Biome base,
                                                   java.util.function.Predicate<String> reject,
                                                   java.util.Map<GenerationStep.Decoration, List<ResourceKey<PlacedFeature>>> extra) {
+        return derive(context, base, reject, java.util.Map.of(), extra);
+    }
+
+    /**
+     * As above; {@code first} features run before the prototype's features of their step (trees before grass, flowers
+     * and mushrooms, which would otherwise take the place of trunk blocks).
+     */
+    private static BiomeGenerationSettings derive(BootstrapContext<Biome> context, Biome base,
+                                                  java.util.function.Predicate<String> reject,
+                                                  java.util.Map<GenerationStep.Decoration, List<ResourceKey<PlacedFeature>>> first,
+                                                  java.util.Map<GenerationStep.Decoration, List<ResourceKey<PlacedFeature>>> extra) {
         var placed = context.lookup(Registries.PLACED_FEATURE);
         var gen = new BiomeGenerationSettings.Builder(placed, context.lookup(Registries.CONFIGURED_CARVER));
         var settings = base.getGenerationSettings();
@@ -166,6 +199,7 @@ final class EpicFeatures {
         var steps = GenerationStep.Decoration.values();
         var features = settings.features();
         for (int i = 0; i < steps.length; i++) {
+            for (var key : first.getOrDefault(steps[i], List.of())) gen.addFeature(steps[i], placed.getOrThrow(key));
             if (i < features.size()) {
                 for (var feature : features.get(i)) {
                     String id = feature.unwrapKey().map(k -> k.location().toString()).orElse("");
@@ -178,17 +212,39 @@ final class EpicFeatures {
     }
 
     static Biome willowSwamp(BootstrapContext<Biome> context, Biome swamp, float offset) {
+        // Fresh water: no seagrass (water grass instead).
         var gen = derive(context, swamp, id -> id.equals("minecraft:trees_swamp") || id.equals("minecraft:flower_swamp")
-                        || id.equals("minecraft:patch_dead_bush"),
+                        || id.equals("minecraft:patch_dead_bush") || id.equals("minecraft:lake_lava_surface")
+                        || id.equals("minecraft:seagrass_swamp"),
+                java.util.Map.of(GenerationStep.Decoration.VEGETAL_DECORATION, List.of(HUGE_WILLOWS, WILLOWS)),
                 java.util.Map.of(GenerationStep.Decoration.UNDERGROUND_ORES, List.of(SILT_DISKS),
-                        GenerationStep.Decoration.VEGETAL_DECORATION, List.of(HUGE_WILLOWS, WILLOWS, CATTAILS, WATER_GRASS,
-                                WILLOW_FERNS, WILLOW_GRASS)));
+                        GenerationStep.Decoration.VEGETAL_DECORATION, List.of(CATTAILS, WATER_GRASS, WILLOW_FERNS, WILLOW_GRASS)));
         var climate = swamp.getModifiedClimateSettings();
         return new Biome.BiomeBuilder().hasPrecipitation(true).temperature(0.85f + offset).downfall(0.95f)
                 .temperatureAdjustment(climate.temperatureModifier())
                 .specialEffects(RuntimeWorldgen.effects(swamp.getSpecialEffects(), e -> e.waterColor(0x6B8F4E).waterFogColor(0x1F3A1A)
                         .fogColor(0xB3C2A8).grassColorOverride(0x5E8C35).foliageColorOverride(0x4F7F2A)))
                 .mobSpawnSettings(swamp.getMobSettings()).generationSettings(gen).build();
+    }
+
+    /** Stone ring sea: turquoise water; glow berry vines hang from the arches and overhangs. */
+    static Biome stoneRingSea(BootstrapContext<Biome> context, Biome ocean, float offset) {
+        var gen = derive(context, ocean, id -> false,
+                java.util.Map.of(GenerationStep.Decoration.VEGETAL_DECORATION, List.of(RING_VINES)));
+        return new Biome.BiomeBuilder().hasPrecipitation(true).temperature(0.7f + offset).downfall(0.6f)
+                .specialEffects(RuntimeWorldgen.effects(ocean.getSpecialEffects(), e -> e.waterColor(0x3AA6B0).waterFogColor(0x0E4650)
+                        .fogColor(0xC8D2D4)))
+                .mobSpawnSettings(ocean.getMobSettings()).generationSettings(gen).build();
+    }
+
+    /** Dry river beds: desert climate and life, dry reeds along the bed instead of cacti. */
+    static Biome dryRiverbed(BootstrapContext<Biome> context, Biome desert, float offset) {
+        var gen = derive(context, desert, id -> id.equals("minecraft:patch_cactus_desert") || id.equals("minecraft:patch_sugar_cane_desert"),
+                java.util.Map.of(GenerationStep.Decoration.VEGETAL_DECORATION, List.of(DRY_REEDS)));
+        return new Biome.BiomeBuilder().hasPrecipitation(false).temperature(1.6f + offset).downfall(0.05f)
+                .specialEffects(RuntimeWorldgen.effects(desert.getSpecialEffects(), e -> e.grassColorOverride(0xBFB76B)
+                        .foliageColorOverride(0xAEA42A)))
+                .mobSpawnSettings(desert.getMobSettings()).generationSettings(gen).build();
     }
 
     static Biome giantStoneForest(BootstrapContext<Biome> context, Biome taiga, float offset) {

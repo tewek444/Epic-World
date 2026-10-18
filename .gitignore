@@ -42,3 +42,6 @@ run-gametest/
 
 ### Local ###
 logs/
+
+# Third-party jars compiled against (not redistributed)
+libs/

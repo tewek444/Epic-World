@@ -32,19 +32,55 @@ public final class EpicWorld {
     public static final String MODID = "epicworld";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public EpicWorld(IEventBus modBus) {
+    public EpicWorld(IEventBus modBus, net.neoforged.fml.ModContainer container) {
+        container.registerConfig(net.neoforged.fml.config.ModConfig.Type.COMMON, me.nyxia.epicworld.config.EpicPerformance.SPEC,
+                "epicworld-performance.toml");
         ModRegistries.register(modBus);
         ModBlocks.register(modBus);
         EpicFeatureTypes.register(modBus);
         modBus.addListener(RuntimePack::register);
         modBus.addListener(EpicDataGen::gather);
         modBus.addListener(EpicWorld::commonSetup);
+        modBus.addListener(EpicWorld::spawnPlacements);
+        modBus.addListener(EpicWorld::signBlockEntities);
+        NeoForge.EVENT_BUS.addListener(EpicWorld::toolActions);
+        if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) me.nyxia.epicworld.client.EpicClient.register(modBus);
         NeoForge.EVENT_BUS.addListener(EpicWorld::levelLoad);
         NeoForge.EVENT_BUS.addListener(EpicWorld::serverStarted);
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> LegacyIndex.clear());
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.dev.GenerationBenchmark::tick);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.dev.GenerationBenchmark::onChunkLoad);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.voxy.LodGenerator::onServerStarted);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.voxy.LodGenerator::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.voxy.LodGenerator::onTick);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.pregen.Pregenerator::onServerStarted);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.pregen.Pregenerator::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.pregen.Pregenerator::onTick);
+        modBus.addListener(me.nyxia.epicworld.network.EpicNetwork::register);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.worldgen.deferred.DeepFiller::onLoad);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.worldgen.deferred.DeepFiller::onTick);
+        NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> me.nyxia.epicworld.worldgen.deferred.DeepFiller.clear());
         NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent event) -> EpicCommands.register(event.getDispatcher()));
         WorldSettingsStore.ensureGlobalConfig();
+    }
+
+    /** Willow signs use the vanilla sign block entities (and so the vanilla sign renderers). */
+    private static void signBlockEntities(net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent event) {
+        event.modify(net.minecraft.world.level.block.entity.BlockEntityType.SIGN, ModBlocks.WILLOW_SIGN.get(), ModBlocks.WILLOW_WALL_SIGN.get());
+        event.modify(net.minecraft.world.level.block.entity.BlockEntityType.HANGING_SIGN, ModBlocks.WILLOW_HANGING_SIGN.get(),
+                ModBlocks.WILLOW_WALL_HANGING_SIGN.get());
+    }
+
+    /** Axe stripping of willow logs and wood. */
+    private static void toolActions(net.neoforged.neoforge.event.level.BlockEvent.BlockToolModificationEvent event) {
+        if (event.getItemAbility() != net.neoforged.neoforge.common.ItemAbilities.AXE_STRIP) return;
+        var state = event.getState();
+        net.minecraft.world.level.block.Block stripped = state.is(ModBlocks.WILLOW_LOG.get()) ? ModBlocks.STRIPPED_WILLOW_LOG.get()
+                : state.is(ModBlocks.WILLOW_WOOD.get()) ? ModBlocks.STRIPPED_WILLOW_WOOD.get() : null;
+        if (stripped != null) {
+            event.setFinalState(stripped.defaultBlockState().setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS,
+                    state.getValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS)));
+        }
     }
 
     private static void commonSetup(FMLCommonSetupEvent event) {
@@ -77,5 +113,18 @@ public final class EpicWorld {
         if (!isEpic(server.overworld())) return;
         var settings = server.registryAccess().registryOrThrow(ModRegistries.WORLD_SETTINGS).get(ModRegistries.ACTIVE_SETTINGS);
         if (settings != null) WorldSettingsStore.persist(server.getWorldPath(LevelResource.ROOT), settings);
+    }    /**
+     * Glow squid normally spawn only 33 blocks or more below the sea, which river tunnels never reach. In the glowing
+     * and glowworm tunnels (lush caves and glowing caves away from the sky) they may also spawn in the river water.
+     */
+    private static void spawnPlacements(net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent event) {
+        var lush = me.nyxia.epicworld.worldgen.RuntimeWorldgen.biomeKey("lush_caves");
+        var glowing = me.nyxia.epicworld.worldgen.RuntimeWorldgen.biomeKey("glowing_caves");
+        event.register(net.minecraft.world.entity.EntityType.GLOW_SQUID,
+                (type, level, reason, pos, random) -> level.getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER)
+                        && !level.canSeeSky(pos) && (level.getBiome(pos).is(lush) || level.getBiome(pos).is(glowing)),
+                net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent.Operation.OR);
     }
+
+
 }

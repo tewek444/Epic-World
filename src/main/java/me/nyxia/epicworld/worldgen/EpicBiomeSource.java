@@ -16,9 +16,20 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * The list order equals {@link BiomeCatalog#ENTRIES}.
  */
 public final class EpicBiomeSource extends BiomeSource {
+    /**
+     * The list is rebuilt from the biome registry in {@link BiomeCatalog} order on every load and not stored: a world
+     * created by an older version keeps its stored list (without biomes added since), and new indices would fall back
+     * to the first biome. A stored {@code biomes} field of older saves is ignored.
+     */
     public static final MapCodec<EpicBiomeSource> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
-            Biome.CODEC.listOf().fieldOf("biomes").forGetter(source -> source.biomes)
-    ).apply(i, EpicBiomeSource::new));
+            net.minecraft.resources.RegistryOps.retrieveGetter(net.minecraft.core.registries.Registries.BIOME)
+    ).apply(i, EpicBiomeSource::fromRegistry));
+
+    static EpicBiomeSource fromRegistry(net.minecraft.core.HolderGetter<Biome> registry) {
+        var list = new java.util.ArrayList<Holder<Biome>>();
+        for (var entry : BiomeCatalog.ENTRIES) list.add(registry.getOrThrow(RuntimeWorldgen.biomeKey(entry.path())));
+        return new EpicBiomeSource(list);
+    }
 
     private final List<Holder<Biome>> biomes;
     /** Biome path (e.g. "plains") to list index, for continuing biomes of old chunks (see {@link LegacyBiomes}). */

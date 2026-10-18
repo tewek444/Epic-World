@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_slaked_lime": {
+      "conditions": {
+        "items": [
+          {
+            "items": "epicworld:slaked_lime"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "epicworld:white_dye_from_slaked_lime"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_slaked_lime"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "epicworld:white_dye_from_slaked_lime"
+    ]
+  }
+}

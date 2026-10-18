@@ -67,6 +67,15 @@ final class LegacyBlending {
      * Applies the transition and returns per-column water levels (index {@code dx + 16*dz}) to use instead of the sea
      * level when filling water, or {@code null} when the chunk is not near old terrain.
      */
+    /** Whether {@link #apply} may reshape this chunk (it is next to old terrain). */
+    public static boolean nearLegacy(TerrainEngine engine, net.minecraft.world.level.ChunkPos cp) {
+        var compat = engine.settings.compatibility();
+        if (!compat.terrainBlending() || compat.blendingDistance() <= 0) return false;
+        LegacyIndex index = LegacyIndex.currentAny();
+        if (index == null || index.isEmpty()) return false;
+        return index.isLegacy(cp.x, cp.z) || index.anyNear(cp.x, cp.z, compat.blendingDistance() / 16 + 1);
+    }
+
     @Nullable
     static int[] apply(NoiseBasedChunkGenerator generator, TerrainEngine engine, RandomState state, ChunkAccess chunk) {
         var compat = engine.settings.compatibility();

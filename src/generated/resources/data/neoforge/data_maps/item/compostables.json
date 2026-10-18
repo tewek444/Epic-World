@@ -1,0 +1,28 @@
+{
+  "values": {
+    "epicworld:cattail": {
+      "chance": 0.3
+    },
+    "epicworld:dry_cattail": {
+      "chance": 0.3
+    },
+    "epicworld:dry_reeds": {
+      "chance": 0.3
+    },
+    "epicworld:reed": {
+      "chance": 0.3
+    },
+    "epicworld:spanish_moss": {
+      "chance": 0.3
+    },
+    "epicworld:water_grass": {
+      "chance": 0.3
+    },
+    "epicworld:willow_leaves": {
+      "chance": 0.3
+    },
+    "epicworld:willow_sapling": {
+      "chance": 0.3
+    }
+  }
+}

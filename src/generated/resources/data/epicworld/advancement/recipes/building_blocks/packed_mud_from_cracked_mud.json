@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cracked_mud": {
+      "conditions": {
+        "items": [
+          {
+            "items": "epicworld:cracked_mud"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "epicworld:packed_mud_from_cracked_mud"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_cracked_mud"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "epicworld:packed_mud_from_cracked_mud"
+    ]
+  }
+}

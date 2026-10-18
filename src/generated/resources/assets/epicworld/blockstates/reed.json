@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "half=lower": {
+      "model": "epicworld:block/reed_bottom"
+    },
+    "half=upper": {
+      "model": "epicworld:block/reed_top"
+    }
+  }
+}

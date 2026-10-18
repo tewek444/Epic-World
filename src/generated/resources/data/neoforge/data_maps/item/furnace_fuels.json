@@ -1,0 +1,10 @@
+{
+  "values": {
+    "epicworld:dry_cattail": {
+      "burn_time": 100
+    },
+    "epicworld:dry_reeds": {
+      "burn_time": 100
+    }
+  }
+}

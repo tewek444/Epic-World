@@ -215,6 +215,121 @@ public final class WorldgenGameTests {
         helper.succeed();
     }
 
+    /**
+     * Deferred depth: filling the top and the deep part of a chunk separately must give exactly the blocks and biomes of
+     * one vanilla fill. Logs how biome and noise time split between the two parts (after a warm-up round).
+     */
+    @GameTest(template = "epicworld_empty", timeoutTicks = 6000)
+    public static void deferredSplitMatchesFullFill(GameTestHelper helper) {
+        var registry = helper.getLevel().registryAccess();
+        var generator = (EpicChunkGenerator) registry.registryOrThrow(Registries.WORLD_PRESET).getOrThrow(RuntimeWorldgen.PRESET)
+                .overworld().orElseThrow().generator();
+        var settingsHolder = registry.registryOrThrow(Registries.NOISE_SETTINGS).getHolderOrThrow(RuntimeWorldgen.SETTINGS);
+        var settings = settingsHolder.value();
+        EpicSettings s = registry.registryOrThrow(ModRegistries.WORLD_SETTINGS).getOrThrow(ModRegistries.ACTIVE_SETTINGS);
+        var state = RandomState.create(settings, registry.lookupOrThrow(Registries.NOISE), 1234);
+        var engine = EpicChunkGenerator.engine(state);
+        var bounds = LevelHeightAccessor.create(s.world().minY(), s.world().heightLimit() - s.world().minY());
+        var biomes = registry.registryOrThrow(Registries.BIOME);
+        var manager = helper.getLevel().structureManager();
+        int noiseMin = settings.noiseSettings().minY();
+        int noiseTop = noiseMin + settings.noiseSettings().height();
+        var fluids = me.nyxia.epicworld.worldgen.deferred.DeepNoise.fluids(settings);
+        // full biomes (cold engine), full fill, biomes top, biomes deep, noise top, noise deep
+        long[] time = new long[6];
+        long deepBlocks = 0;
+        long allBlocks = 0;
+        int count = 0;
+        for (int round = 0; round < 2; round++) {
+            for (int cx = 0; cx < 5; cx++) {
+                for (int cz = 0; cz < 5; cz++) {
+                    // Round 0 warms up the JIT on other chunks and is not counted.
+                    var pos = round == 0 ? new ChunkPos(-900 + cx * 9, 700 + cz * 9) : new ChunkPos(-2000 + cx * 173 + (cz & 1) * 11, 1500 + cz * 131);
+                    long[] t = new long[6];
+                    var full = new ProtoChunk(pos, UpgradeData.EMPTY, bounds, biomes, null);
+                    long t0 = System.nanoTime();
+                    await(helper, generator.createBiomes(state, Blender.empty(), manager, full));
+                    t[0] = System.nanoTime() - t0;
+                    full.setPersistedStatus(ChunkStatus.BIOMES);
+                    t0 = System.nanoTime();
+                    me.nyxia.epicworld.worldgen.deferred.DeferredDepth.BYPASS.set(true);
+                    try {
+                        await(helper, generator.fillFromNoise(Blender.empty(), state, manager, full));
+                    } finally {
+                        me.nyxia.epicworld.worldgen.deferred.DeferredDepth.BYPASS.set(false);
+                    }
+                    t[1] = System.nanoTime() - t0;
+
+                    int top = me.nyxia.epicworld.worldgen.deferred.DeferredDepth.deferTop(engine, pos);
+                    int split = top == Integer.MIN_VALUE ? noiseMin : top;
+                    var parts = new ProtoChunk(pos, UpgradeData.EMPTY, bounds, biomes, null);
+                    await(helper, java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        var source = generator.getBiomeSource();
+                        long a = System.nanoTime();
+                        me.nyxia.epicworld.worldgen.deferred.DeepNoise.fillBiomes(parts, source, state.sampler(), split,
+                                bounds.getMaxBuildHeight());
+                        long b = System.nanoTime();
+                        me.nyxia.epicworld.worldgen.deferred.DeepNoise.fillBiomes(parts, source, state.sampler(),
+                                bounds.getMinBuildHeight(), split);
+                        long c = System.nanoTime();
+                        var beard = net.minecraft.world.level.levelgen.Beardifier.forStructuresInChunk(manager, pos);
+                        long d = System.nanoTime();
+                        var upper = me.nyxia.epicworld.worldgen.deferred.DeepNoise.noiseChunk(parts, state, settings, beard, fluids,
+                                Blender.empty(), split, noiseTop);
+                        me.nyxia.epicworld.worldgen.deferred.DeepNoise.fill(parts, upper, settings, split, noiseTop);
+                        long e = System.nanoTime();
+                        if (split > noiseMin) {
+                            var deep = me.nyxia.epicworld.worldgen.deferred.DeepNoise.noiseChunk(parts, state, settings, beard, fluids,
+                                    Blender.empty(), noiseMin, split);
+                            me.nyxia.epicworld.worldgen.deferred.DeepNoise.fill(parts, deep, settings, noiseMin, split);
+                        }
+                        t[2] = b - a;
+                        t[3] = c - b;
+                        t[4] = e - d;
+                        t[5] = System.nanoTime() - e;
+                    }, net.minecraft.Util.backgroundExecutor()));
+                    parts.setPersistedStatus(ChunkStatus.BIOMES);
+                    EpicChunkGenerator.fillLakes(engine, parts, null);
+                    var p = new BlockPos.MutableBlockPos();
+                    for (int y = noiseMin; y < noiseTop; y++) {
+                        for (int x = 0; x < 16; x++) {
+                            for (int z = 0; z < 16; z++) {
+                                p.set(pos.getMinBlockX() + x, y, pos.getMinBlockZ() + z);
+                                var a = full.getBlockState(p);
+                                var b = parts.getBlockState(p);
+                                if (a != b) {
+                                    helper.fail("Split fill (at " + split + ") differs at " + p.toShortString() + ": " + a + " vs " + b);
+                                    return;
+                                }
+                                int qx = (pos.getMinBlockX() + x) >> 2;
+                                int qy = y >> 2;
+                                int qz = (pos.getMinBlockZ() + z) >> 2;
+                                if ((y & 3) == 0 && (x & 3) == 0 && (z & 3) == 0
+                                        && !full.getNoiseBiome(qx, qy, qz).equals(parts.getNoiseBiome(qx, qy, qz))) {
+                                    helper.fail("Split biomes differ at " + p.toShortString());
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    if (round == 0) continue;
+                    for (int i = 0; i < 6; i++) time[i] += t[i];
+                    deepBlocks += 256L * (split - noiseMin);
+                    allBlocks += 256L * (noiseTop - noiseMin);
+                    count++;
+                }
+            }
+        }
+        double ms = 1e6 * count;
+        me.nyxia.epicworld.EpicWorld.LOGGER.info(String.format(java.util.Locale.ROOT,
+                "Epic World deferred split (noise %d..%d, build limit %d): full biomes %.1f ms (cold engine), full fill %.1f ms;"
+                        + " split: biomes top %.1f + deep %.1f ms, noise top %.1f + deep %.1f ms per chunk;"
+                        + " deep part is %.0f%% of the noise blocks",
+                noiseMin, noiseTop, bounds.getMaxBuildHeight(), time[0] / ms, time[1] / ms, time[2] / ms, time[3] / ms,
+                time[4] / ms, time[5] / ms, 100.0 * deepBlocks / allBlocks));
+        helper.succeed();
+    }
+
     /** Every biome the Epic generator can place must have a consistent feature order (no "feature order cycle"). */
     @GameTest(template = "epicworld_empty")
     public static void featureOrderIsConsistent(GameTestHelper helper) {
@@ -243,7 +358,7 @@ public final class WorldgenGameTests {
         var custom = new EpicSettings(new EpicSettings.World(-128, 512, 1280, 160),
                 new EpicSettings.Biomes(2.5, java.util.Map.of("epicworld:plains", new EpicSettings.BiomeOverride(
                         java.util.Optional.of(false), java.util.Optional.of(1.5), java.util.Optional.of(7)))),
-                new EpicSettings.Rivers(true, 24, 128, 0.1, false, false, false),
+                new EpicSettings.Rivers(true, 24, 128, 0.1, false, false, false, false),
                 new EpicSettings.Lakes(false, 40, 300, 100, false, false, false),
                 new EpicSettings.Oceans(true, 0.35, false, false, 180, false),
                 new EpicSettings.Archipelagos(false, 20, 900), new EpicSettings.Atolls(false, 80, 900, false, false),

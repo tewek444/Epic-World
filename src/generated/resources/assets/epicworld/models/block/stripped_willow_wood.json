@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "epicworld:block/stripped_willow_log",
+    "side": "epicworld:block/stripped_willow_log"
+  }
+}

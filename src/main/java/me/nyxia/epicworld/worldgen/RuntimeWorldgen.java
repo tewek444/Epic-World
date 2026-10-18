@@ -237,10 +237,9 @@ public final class RuntimeWorldgen {
 
     private static void preset(BootstrapContext<WorldPreset> context) {
         var biomes = context.lookup(Registries.BIOME);
-        var list = new ArrayList<Holder<Biome>>();
-        for (var entry : BiomeCatalog.ENTRIES) list.add(biomes.getOrThrow(biomeKey(entry.path())));
         var overworld = new LevelStem(context.lookup(Registries.DIMENSION_TYPE).getOrThrow(DIMENSION),
-                new EpicChunkGenerator(new EpicBiomeSource(list), context.lookup(Registries.NOISE_SETTINGS).getOrThrow(SETTINGS)));
+                new EpicChunkGenerator(EpicBiomeSource.fromRegistry(biomes),
+                        context.lookup(Registries.NOISE_SETTINGS).getOrThrow(SETTINGS)));
         Map<ResourceKey<LevelStem>, LevelStem> dimensions = new LinkedHashMap<>();
         dimensions.put(LevelStem.OVERWORLD, overworld);
         dimensions.put(LevelStem.NETHER, new LevelStem(

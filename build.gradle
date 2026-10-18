@@ -61,6 +61,16 @@ neoForge {
             if (cleanJar != null) systemProperty 'connector.clean.path', cleanJar.absolutePath
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // gradlew runClient -PquickPlay=<save>: opens that save directly, for quick in-game checks.
+            if (project.hasProperty('quickPlay')) programArguments.addAll('--quickPlaySingleplayer', project.property('quickPlay').toString())
+            // Experiment: gradlew runClient -PdeferDepth=false generates chunks in full, for comparison.
+            if (project.hasProperty('deferDepth')) systemProperty 'epicworld.deferDepth', project.property('deferDepth').toString()
+            // gradlew runClient -PautoBench=3: runs /epicworld benchmark that many times once in the world, then quits.
+            if (project.hasProperty('autoBench')) systemProperty 'epicworld.autoBench', project.property('autoBench').toString()
+            if (project.hasProperty('benchRadius')) systemProperty 'epicworld.benchRadius', project.property('benchRadius').toString()
+            // gradlew runClient -Pjfr=<file.jfr>: Java Flight Recorder profile of the whole session.
+            if (project.hasProperty('jfr')) jvmArguments.add("-XX:StartFlightRecording=filename=${project.property('jfr')},settings=profile".toString())
+            if (project.hasProperty('jvmExtra')) jvmArguments.addAll(project.property('jvmExtra').toString().split(' '))
         }
 
         server {
@@ -123,6 +133,10 @@ configurations {
 }
 
 dependencies {
+    // Sodium's config API, for the optional Epic World page in Sodium's video settings. Only compiled against: the page
+    // is registered by Sodium itself (mods.toml property) and only when Sodium is installed. Put the Sodium mod jar
+    // (the inner net.caffeinemc.sodium-neoforge-*-mod.jar) into libs/ to build.
+    compileOnly files('libs/sodium-neoforge-0.8.13-compile-only.jar')
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
@@ -228,5 +242,11 @@ tasks.register('renderTerrainMaps', JavaExec) {
     if (project.hasProperty('center')) systemProperty 'epicworld.center', project.property('center')
     if (project.hasProperty('probe')) systemProperty 'epicworld.probe', project.property('probe')
     if (project.hasProperty('ridges')) systemProperty 'epicworld.ridges', 'true'
+    if (project.hasProperty('slivers')) systemProperty 'epicworld.slivers', project.property('slivers')
+    if (project.hasProperty('regions')) systemProperty 'epicworld.regions', project.property('regions')
+    if (project.hasProperty('regionsAt')) { systemProperty 'epicworld.regionsX', project.property('regionsAt').toString().split(',')[0]; systemProperty 'epicworld.regionsZ', project.property('regionsAt').toString().split(',')[1] }
+    if (project.hasProperty('crossings')) systemProperty 'epicworld.crossings', project.property('crossings')
+    if (project.hasProperty('tunnels')) systemProperty 'epicworld.tunnels', project.property('tunnels')
+    if (project.hasProperty('sliversOut')) systemProperty 'epicworld.sliversOut', project.property('sliversOut')
     notCompatibleWithConfigurationCache('dev tool')
 }

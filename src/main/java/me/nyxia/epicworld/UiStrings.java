@@ -1,0 +1,81 @@
+package me.nyxia.epicworld;
+
+/** Interface texts (Sodium page, F3 lines, world generation screen and command): key, English, Russian. */
+public final class UiStrings {
+    private UiStrings() {}
+
+    public static final String[][] ALL = {
+            // Sodium page
+            {"epicworld.options.page", "Epic World", "Epic World"},
+            {"epicworld.options.group.generation", "World generation", "Генерация мира"},
+            {"epicworld.options.group.voxy", "Voxy LODs", "Лоды Voxy"},
+            {"epicworld.options.fast_generation", "Fast generation", "Ускоренная генерация"},
+            {"epicworld.options.fast_generation.tooltip",
+                    "Chunk generation steps run in parallel and the noise is only computed up to the surface. The world stays the same.",
+                    "Этапы генерации чанков идут параллельно, шум считается только до поверхности. Мир получается тем же."},
+            {"epicworld.options.deferred_caves", "Deferred cave generation", "Отложенная генерация пещер"},
+            {"epicworld.options.deferred_caves.tooltip",
+                    "The depth of new chunks is completed when a player goes down nearby. Faster, but cave ends show a plug until then. "
+                            + "The mod can then no longer be removed from the world without losing the unfinished depth.",
+                    "Глубина новых чанков достраивается, когда игрок спускается рядом. Быстрее, но в концах пещер до этого видна "
+                            + "заглушка. Мод нельзя будет удалить из мира без потери недостроенной глубины."},
+            {"epicworld.options.voxy_enabled", "LOD generation", "Генерация лодов"},
+            {"epicworld.options.voxy_enabled.tooltip",
+                    "Epic World's own LOD generation for Voxy around the player (instead of Voxy World Gen, which turns it off when installed).",
+                    "Своя генерация лодов для Voxy вокруг игрока (вместо Voxy World Gen; если он установлен, она не работает)."},
+            {"epicworld.options.voxy_radius", "LOD radius", "Радиус лодов"},
+            {"epicworld.options.voxy_radius.tooltip", "LOD generation radius around the player, in chunks.", "Радиус генерации лодов вокруг игрока, в чанках."},
+            {"epicworld.options.voxy_shape", "LOD area shape", "Форма области лодов"},
+            {"epicworld.options.voxy_shape.tooltip", "Circle (like Minecraft's render distance) or square.", "Круг (как прорисовка Minecraft) или квадрат."},
+            {"epicworld.options.voxy_threads", "LOD threads", "Потоки лодов"},
+            {"epicworld.options.voxy_threads.tooltip", "Threads generating LODs. 0 = half of the CPU cores.", "Сколько потоков генерируют лоды. 0 = половина ядер процессора."},
+            {"epicworld.options.voxy_features", "Trees in LODs", "Деревья в лодах"},
+            {"epicworld.options.voxy_features.tooltip",
+                    "Trees, flowers and other features in LODs. Without them LODs are built faster, but forests look bare.",
+                    "Деревья, цветы и прочие фичи в лодах. Без них лоды строятся быстрее, но лес выглядит голым."},
+            {"epicworld.shape.circle", "Circle", "Круг"},
+            {"epicworld.shape.square", "Square", "Квадрат"},
+            {"epicworld.unit.chunks", "%s chunks", "%s чанков"},
+            {"epicworld.unit.auto", "Auto", "Авто"},
+            // F3
+            {"epicworld.debug.lods", "[Epic World] LODs: %s done, %s/s, %s tiles in work, %s chunks in memory, radius %s (%s), %s threads",
+                    "[Epic World] Лоды: готово %s, %s/с, плиток в работе %s, чанков в памяти %s, радиус %s (%s), потоков %s"},
+            {"epicworld.debug.lods.done", "[Epic World] LODs: radius filled (%s done)", "[Epic World] Лоды: радиус заполнен (готово %s)"},
+            {"epicworld.debug.lods.off", "[Epic World] LODs: off (%s)", "[Epic World] Лоды: не работают (%s)"},
+            {"epicworld.debug.pregen", "[Epic World] Pregeneration: %s%% (%s / %s), %s chunks/s, about %s left%s",
+                    "[Epic World] Предгенерация: %s%% (%s из %s), %s чанков/с, осталось около %s%s"},
+            {"epicworld.debug.pregen.paused", " (paused)", " (на паузе)"},
+            {"epicworld.lods.blocked.disabled", "turned off in the settings", "выключены в настройках"},
+            {"epicworld.lods.blocked.voxy_world_gen", "Voxy World Gen is installed and does the same", "установлен Voxy World Gen, он делает то же самое"},
+            {"epicworld.lods.blocked.no_voxy", "Voxy is not installed", "Voxy не установлен"},
+            // Pregeneration screen
+            {"epicworld.pregen.title", "Pregenerate the world", "Предгенерация мира"},
+            {"epicworld.pregen.from", "From (X, Z):", "От (X, Z):"},
+            {"epicworld.pregen.to", "To (X, Z):", "До (X, Z):"},
+            {"epicworld.pregen.radius", "Radius:", "Радиус:"},
+            {"epicworld.pregen.around_me", "Around me", "Вокруг меня"},
+            {"epicworld.pregen.shape", "Shape: %s", "Форма: %s"},
+            {"epicworld.pregen.start", "Start", "Начать"},
+            {"epicworld.pregen.pause", "Pause", "Пауза"},
+            {"epicworld.pregen.resume", "Resume", "Продолжить"},
+            {"epicworld.pregen.cancel", "Cancel task", "Отменить"},
+            {"epicworld.pregen.close", "Close", "Закрыть"},
+            {"epicworld.pregen.estimate", "%s chunks (%s × %s blocks), about %s", "%s чанков (%s × %s блоков), примерно %s"},
+            {"epicworld.pregen.invalid", "Enter whole numbers", "Введите целые числа"},
+            {"epicworld.pregen.hint", "Coordinates are in blocks. Chunks are generated in full and saved, like with Chunky.",
+                    "Координаты в блоках. Чанки генерируются полностью и сохраняются, как в Chunky."},
+            // Pregeneration messages
+            {"epicworld.pregen.none", "No pregeneration task.", "Предгенерация не запущена."},
+            {"epicworld.pregen.busy", "A pregeneration task is already running: cancel it first.", "Предгенерация уже идёт: сначала отмените её."},
+            {"epicworld.pregen.started", "Pregeneration started: %s chunks from %s to %s, %s.", "Предгенерация запущена: %s чанков от %s до %s, форма: %s."},
+            {"epicworld.pregen.paused", "Pregeneration paused.", "Предгенерация на паузе."},
+            {"epicworld.pregen.resumed", "Pregeneration resumed.", "Предгенерация продолжена."},
+            {"epicworld.pregen.cancelled", "Pregeneration cancelled (%s chunks were generated).", "Предгенерация отменена (сгенерировано чанков: %s)."},
+            {"epicworld.pregen.finished", "Pregeneration finished: %s chunks in %s.", "Предгенерация завершена: %s чанков за %s."},
+            {"epicworld.pregen.progress", "Pregeneration: %s%% (%s / %s), %s chunks/s, about %s left",
+                    "Предгенерация: %s%% (%s из %s), %s чанков/с, осталось около %s"},
+            {"epicworld.pregen.console", "Usage: /epicworld gen start <x1> <z1> <x2> <z2> [circle|square], /epicworld gen radius <r> [circle|square], pause, resume, cancel, status",
+                    "Использование: /epicworld gen start <x1> <z1> <x2> <z2> [circle|square], /epicworld gen radius <r> [circle|square], pause, resume, cancel, status"},
+            {"epicworld.pregen.no_permission", "Only operators can pregenerate the world.", "Предгенерировать мир могут только операторы."},
+    };
+}

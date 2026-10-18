@@ -45,7 +45,8 @@ public record EpicSettings(World world, Biomes biomes, Rivers rivers, Lakes lake
     }
 
     public record Rivers(boolean enabled, int minWidth, int maxWidth, double widthVariation,
-                         boolean depthScalesWithWidth, boolean connectedNetworks, boolean allowMountainGorges) {
+                         boolean depthScalesWithWidth, boolean connectedNetworks, boolean allowMountainGorges,
+                         boolean mountainTunnels) {
         public static final Codec<Rivers> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.BOOL.fieldOf("enabled").forGetter(Rivers::enabled),
                 Codec.INT.fieldOf("min_width").forGetter(Rivers::minWidth),
@@ -53,7 +54,9 @@ public record EpicSettings(World world, Biomes biomes, Rivers rivers, Lakes lake
                 Codec.DOUBLE.fieldOf("width_variation").forGetter(Rivers::widthVariation),
                 Codec.BOOL.fieldOf("depth_scales_with_width").forGetter(Rivers::depthScalesWithWidth),
                 Codec.BOOL.fieldOf("connected_river_networks").forGetter(Rivers::connectedNetworks),
-                Codec.BOOL.fieldOf("allow_mountain_gorges").forGetter(Rivers::allowMountainGorges)).apply(i, Rivers::new));
+                Codec.BOOL.fieldOf("allow_mountain_gorges").forGetter(Rivers::allowMountainGorges),
+                // Added in 1.1.0: older settings snapshots have no such key.
+                Codec.BOOL.optionalFieldOf("mountain_tunnels", true).forGetter(Rivers::mountainTunnels)).apply(i, Rivers::new));
     }
 
     public record Lakes(boolean enabled, int minRadius, int maxRadius, int maxDepth,
@@ -114,7 +117,7 @@ public record EpicSettings(World world, Biomes biomes, Rivers rivers, Lakes lake
     public static final EpicSettings DEFAULT = new EpicSettings(
             new World(-64, 448, 1024, 208),
             new Biomes(1.0, Map.of()),
-            new Rivers(true, 16, 256, 0.2, true, true, true),
+            new Rivers(true, 16, 256, 0.2, true, true, true, true),
             new Lakes(true, 32, 512, 256, true, true, true),
             new Oceans(true, 0.5, true, true, 256, true),
             new Archipelagos(true, 16, 2048),

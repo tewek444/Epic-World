@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "epicworld:block/siltstone_brick_slab"
+    },
+    "type=double": {
+      "model": "epicworld:block/siltstone_bricks"
+    },
+    "type=top": {
+      "model": "epicworld:block/siltstone_brick_slab_top"
+    }
+  }
+}

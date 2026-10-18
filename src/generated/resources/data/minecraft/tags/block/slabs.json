@@ -4,6 +4,9 @@
     "epicworld:marble_slab",
     "epicworld:gray_marble_slab",
     "epicworld:blue_marble_slab",
-    "epicworld:polished_marble_slab"
+    "epicworld:polished_marble_slab",
+    "epicworld:siltstone_slab",
+    "epicworld:polished_siltstone_slab",
+    "epicworld:siltstone_brick_slab"
   ]
 }

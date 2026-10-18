@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "#": {
+      "item": "epicworld:silt"
+    }
+  },
+  "pattern": [
+    "##",
+    "##"
+  ],
+  "result": {
+    "count": 1,
+    "id": "epicworld:siltstone"
+  }
+}

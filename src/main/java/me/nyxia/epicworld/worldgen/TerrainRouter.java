@@ -48,7 +48,8 @@ final class TerrainRouter {
         var underground = underground(noise, slopedCheese, entrances, spaghettiRoughness, minY, top);
         var shaped = rangeChoice(slopedCheese, -1000000, 1.5625, surfaceCaves, underground);
         var rocks = interpolated(epic(EpicDensity.Output.ROCKS, settingsHolder, seed));
-        var finalDensity = max(min(postProcess(slide(shaped, minY, top)), noodle(noise, minY, top)), rocks);
+        var tunnels = epic(EpicDensity.Output.TUNNEL, settingsHolder, seed);
+        var finalDensity = max(min(min(postProcess(slide(shaped, minY, top)), noodle(noise, minY, top)), tunnels), rocks);
 
         var surfaceOnly = epic(EpicDensity.Output.SURFACE_TERRAIN, settingsHolder, seed);
         var initial = slide(add(surfaceOnly, constant(0.390625)).clamp(-64, 64), minY, top);

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "#": {
+      "item": "epicworld:polished_siltstone"
+    }
+  },
+  "pattern": [
+    "###"
+  ],
+  "result": {
+    "count": 6,
+    "id": "epicworld:polished_siltstone_slab"
+  }
+}

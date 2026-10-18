@@ -19,6 +19,8 @@ public final class Simplex2 {
     }
 
     private final short[] perm = new short[512];
+    /** {@code perm[i] % GRADIENTS}, so corners need no division. */
+    private final byte[] grad = new byte[512];
     private final double offsetX;
     private final double offsetY;
 
@@ -32,7 +34,10 @@ public final class Simplex2 {
             p[i] = p[j];
             p[j] = t;
         }
-        for (int i = 0; i < 512; i++) perm[i] = p[i & 255];
+        for (int i = 0; i < 512; i++) {
+            perm[i] = p[i & 255];
+            grad[i] = (byte) (perm[i] % GRADIENTS);
+        }
         offsetX = random.nextDouble() * 4096;
         offsetY = random.nextDouble() * 4096;
     }
@@ -54,16 +59,15 @@ public final class Simplex2 {
         double y2 = y0 - 1 + 2 * G2;
         int ii = i & 255;
         int jj = j & 255;
-        double n = corner(perm[ii + perm[jj]], x0, y0)
-                + corner(perm[ii + i1 + perm[jj + j1]], x1, y1)
-                + corner(perm[ii + 1 + perm[jj + 1]], x2, y2);
+        double n = corner(grad[ii + perm[jj]], x0, y0)
+                + corner(grad[ii + i1 + perm[jj + j1]], x1, y1)
+                + corner(grad[ii + 1 + perm[jj + 1]], x2, y2);
         return 70.0 * n;
     }
 
-    private static double corner(int hash, double x, double y) {
+    private static double corner(int g, double x, double y) {
         double t = 0.5 - x * x - y * y;
         if (t <= 0) return 0;
-        int g = hash % GRADIENTS;
         t *= t;
         return t * t * (GX[g] * x + GY[g] * y);
     }

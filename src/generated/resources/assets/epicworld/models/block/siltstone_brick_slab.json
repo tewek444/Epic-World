@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "epicworld:block/siltstone_bricks",
+    "side": "epicworld:block/siltstone_bricks",
+    "top": "epicworld:block/siltstone_bricks"
+  }
+}

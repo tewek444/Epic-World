@@ -4,6 +4,9 @@
     "epicworld:marble_wall",
     "epicworld:gray_marble_wall",
     "epicworld:blue_marble_wall",
-    "epicworld:polished_marble_wall"
+    "epicworld:polished_marble_wall",
+    "epicworld:siltstone_wall",
+    "epicworld:polished_siltstone_wall",
+    "epicworld:siltstone_brick_wall"
   ]
 }

@@ -26,7 +26,7 @@ import net.minecraft.world.level.material.Fluids;
  */
 public class CaveDecorFeature extends Feature<CaveDecorFeature.Config> {
     public enum Kind implements StringRepresentable {
-        MARBLE, GLOWING;
+        MARBLE, GLOWING, RING_VINES;
 
         public static final Codec<Kind> CODEC = StringRepresentable.fromEnum(Kind::values);
 
@@ -50,22 +50,32 @@ public class CaveDecorFeature extends Feature<CaveDecorFeature.Config> {
     public boolean place(FeaturePlaceContext<Config> context) {
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
-        Holder<Biome> target = level.getBiome(origin);
+        if (context.config().kind() == Kind.RING_VINES) return ringVines(context);
+        boolean marble = context.config().kind() == Kind.MARBLE;
+        // The whole chunk is scanned for the biome itself: it also lines river tunnels near the surface, not only
+        // deep caves, so the feature's origin need not be inside it.
+        Holder<Biome> target = level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME)
+                .getHolder(me.nyxia.epicworld.worldgen.RuntimeWorldgen.biomeKey(marble ? "marble_caves" : "glowing_caves"))
+                .map(h -> (Holder<Biome>) h).orElse(level.getBiome(origin));
         int baseX = origin.getX() & ~15;
         int baseZ = origin.getZ() & ~15;
         long seed = level.getSeed();
         var pos = new BlockPos.MutableBlockPos();
         var side = new BlockPos.MutableBlockPos();
-        boolean marble = context.config().kind() == Kind.MARBLE;
         boolean placed = false;
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
                 int x = baseX + dx;
                 int z = baseZ + dz;
-                int top = level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z) - 8;
+                // Marble lines the exposed rock of marble lakes up to the surface; glowing caves stay underground.
+                int top = marble ? level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) + 1
+                        : level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z) - 8;
                 boolean inBiome = false;
-                for (int y = level.getMinBuildHeight() + 2; y < top; y++) {
-                    if ((y & 3) == 0 || y == level.getMinBuildHeight() + 2) inBiome = level.getBiome(pos.set(x, y, z)).equals(target);
+                // Marble only near the surface of the lake (bed, cliffs, islets, grottoes), not in the caves below.
+                int bottom = marble ? Math.max(level.getMinBuildHeight() + 2, level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z) - 30)
+                        : level.getMinBuildHeight() + 2;
+                for (int y = bottom; y < top; y++) {
+                    if ((y & 3) == 0 || y == bottom) inBiome = level.getBiome(pos.set(x, y, z)).equals(target);
                     if (!inBiome) continue;
                     pos.set(x, y, z);
                     BlockState state = level.getBlockState(pos);
@@ -90,6 +100,59 @@ public class CaveDecorFeature extends Feature<CaveDecorFeature.Config> {
                                 : ModBlocks.LIMESTONE.get().defaultBlockState();
                         level.setBlock(pos, lining, 2);
                         decorateGlowing(level, pos, open, h);
+                    }
+                    placed = true;
+                }
+            }
+        }
+        return placed;
+    }
+
+    /**
+     * Stone ring sea: glow berry vines hang from the underside of arches, rings and overhangs above the water, and moss
+     * grows on some of the rock faces under them.
+     */
+    private boolean ringVines(FeaturePlaceContext<Config> context) {
+        WorldGenLevel level = context.level();
+        BlockPos origin = context.origin();
+        Holder<Biome> target = level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME)
+                .getHolder(me.nyxia.epicworld.worldgen.RuntimeWorldgen.biomeKey("stone_ring_sea")).map(h -> (Holder<Biome>) h)
+                .orElse(level.getBiome(origin));
+        int baseX = origin.getX() & ~15;
+        int baseZ = origin.getZ() & ~15;
+        long seed = level.getSeed();
+        int sea = level.getSeaLevel();
+        var pos = new BlockPos.MutableBlockPos();
+        boolean placed = false;
+        for (int dx = 0; dx < 16; dx++) {
+            for (int dz = 0; dz < 16; dz++) {
+                int x = baseX + dx;
+                int z = baseZ + dz;
+                if (!level.getBiome(pos.set(x, sea, z)).equals(target)) continue;
+                int top = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+                for (int y = sea + 2; y < top; y++) {
+                    pos.set(x, y, z);
+                    BlockState state = level.getBlockState(pos);
+                    if (state.isAir() || !state.isFaceSturdy(level, pos, Direction.DOWN)) continue;
+                    if (!level.getBlockState(pos.below()).isAir()) continue;
+                    long h = Hash.cell3(seed, x, y, z, 405);
+                    if (Hash.unit(h, 1) > 0.14) continue;
+                    int length = 2 + (int) (Hash.unit(h, 2) * 9);
+                    for (int i = 1; i <= length; i++) {
+                        BlockPos p = pos.below(i);
+                        if (!level.getBlockState(p).isAir() || p.getY() <= sea + 1) break;
+                        boolean tip = i == length || !level.getBlockState(p.below()).isAir() || p.getY() <= sea + 2;
+                        boolean berries = Hash.unit(h, 10 + i) < 0.35;
+                        BlockState vine = tip
+                                ? net.minecraft.world.level.block.Blocks.CAVE_VINES.defaultBlockState()
+                                        .setValue(net.minecraft.world.level.block.CaveVines.BERRIES, berries)
+                                : net.minecraft.world.level.block.Blocks.CAVE_VINES_PLANT.defaultBlockState()
+                                        .setValue(net.minecraft.world.level.block.CaveVines.BERRIES, berries);
+                        level.setBlock(p, vine, 2);
+                        if (tip) break;
+                    }
+                    if (state.is(BlockTags.BASE_STONE_OVERWORLD) && Hash.unit(h, 3) < 0.5) {
+                        level.setBlock(pos, net.minecraft.world.level.block.Blocks.MOSS_BLOCK.defaultBlockState(), 2);
                     }
                     placed = true;
                 }

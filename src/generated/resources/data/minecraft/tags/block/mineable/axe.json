@@ -2,6 +2,21 @@
   "remove": [],
   "values": [
     "epicworld:willow_log",
-    "epicworld:willow_planks"
+    "epicworld:willow_planks",
+    "epicworld:willow_wood",
+    "epicworld:stripped_willow_log",
+    "epicworld:stripped_willow_wood",
+    "epicworld:willow_stairs",
+    "epicworld:willow_slab",
+    "epicworld:willow_fence",
+    "epicworld:willow_fence_gate",
+    "epicworld:willow_door",
+    "epicworld:willow_trapdoor",
+    "epicworld:willow_pressure_plate",
+    "epicworld:willow_button",
+    "epicworld:willow_sign",
+    "epicworld:willow_wall_sign",
+    "epicworld:willow_hanging_sign",
+    "epicworld:willow_wall_hanging_sign"
   ]
 }

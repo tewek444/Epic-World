@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_spike": {
+      "conditions": {
+        "items": [
+          {
+            "items": "epicworld:limestone_spike"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "epicworld:limestone_from_spikes"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_spike"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "epicworld:limestone_from_spikes"
+    ]
+  }
+}

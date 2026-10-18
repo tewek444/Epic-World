@@ -40,7 +40,8 @@ final class BiomeCompatibilityData implements DataProvider {
     }
 
     static {
-        String[] all = {"lake", "atoll", "stone_ring_sea", "willow_swamp", "giant_stone_forest", "marble_caves", "glowing_caves"};
+        String[] all = {"lake", "atoll", "stone_ring_sea", "willow_swamp", "giant_stone_forest", "marble_caves", "glowing_caves",
+                "dry_riverbed"};
         add("minecraft:is_overworld", all);
         add("c:is_overworld", all);
         add("minecraft:has_structure/mineshaft", all);
@@ -64,7 +65,9 @@ final class BiomeCompatibilityData implements DataProvider {
         add("minecraft:increased_fire_burnout", "willow_swamp");
         add("c:is_swamp", "willow_swamp");
         add("c:is_wet/overworld", "willow_swamp", "giant_stone_forest", "glowing_caves");
-        add("c:is_hot/overworld", "atoll");
+        add("c:is_hot/overworld", "atoll", "dry_riverbed");
+        add("c:is_dry/overworld", "dry_riverbed");
+        add("c:is_sparse_vegetation/overworld", "dry_riverbed");
         add("c:is_temperate/overworld", "lake", "giant_stone_forest", "marble_caves");
         add("c:is_forest", "giant_stone_forest");
         add("c:is_dense_vegetation/overworld", "willow_swamp", "giant_stone_forest");

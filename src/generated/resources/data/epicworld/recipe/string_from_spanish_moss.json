@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "epicworld:spanish_moss"
+    },
+    {
+      "item": "epicworld:spanish_moss"
+    },
+    {
+      "item": "epicworld:spanish_moss"
+    },
+    {
+      "item": "epicworld:spanish_moss"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "minecraft:string"
+  }
+}

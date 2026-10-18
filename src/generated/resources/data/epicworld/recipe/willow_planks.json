@@ -4,7 +4,7 @@
   "group": "planks",
   "ingredients": [
     {
-      "item": "epicworld:willow_log"
+      "tag": "epicworld:willow_logs"
     }
   ],
   "result": {

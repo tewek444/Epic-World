@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "epicworld:block/willow_planks",
+    "side": "epicworld:block/willow_planks",
+    "top": "epicworld:block/willow_planks"
+  }
+}

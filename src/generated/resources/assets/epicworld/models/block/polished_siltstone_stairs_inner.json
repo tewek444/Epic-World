@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "epicworld:block/polished_siltstone",
+    "side": "epicworld:block/polished_siltstone",
+    "top": "epicworld:block/polished_siltstone"
+  }
+}

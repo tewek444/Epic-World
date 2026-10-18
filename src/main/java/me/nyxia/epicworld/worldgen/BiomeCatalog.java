@@ -46,9 +46,9 @@ public final class BiomeCatalog {
             v("windswept_gravelly_hills", 50, Shape.WINDSWEPT), v("windswept_hills", 100, Shape.WINDSWEPT),
             v("windswept_savanna", 50, Shape.WINDSWEPT), v("wooded_badlands", 70, Shape.WOODED_BADLANDS),
             // Epic World biomes (append only).
-            n("lake", 100, Shape.NONE), n("atoll", 100, Shape.NONE), n("stone_ring_sea", 6, Shape.STONE_RINGS),
+            n("lake", 100, Shape.NONE), n("atoll", 100, Shape.NONE), n("stone_ring_sea", 3, Shape.STONE_RINGS),
             n("willow_swamp", 40, Shape.WILLOW), n("giant_stone_forest", 12, Shape.STONE_FOREST),
-            n("marble_caves", 8, Shape.NONE), n("glowing_caves", 8, Shape.NONE));
+            n("marble_caves", 8, Shape.NONE), n("glowing_caves", 8, Shape.NONE), n("dry_riverbed", 100, Shape.NONE));
 
     private static Entry v(String path, int weight, Shape shape) { return new Entry(path, path, weight, 1.0, shape); }
 
@@ -95,23 +95,23 @@ public final class BiomeCatalog {
                 {c("plains", "sunflower_plains", "flower_forest"), c("plains", "forest", "sunflower_plains"), c("forest", "flower_forest", "birch_forest"),
                         c("birch_forest", "old_growth_birch_forest", "dark_forest", "swamp"), c("dark_forest", "swamp", "old_growth_birch_forest")},
                 {c("savanna"), c("savanna", "plains"), c("forest", "savanna", "sparse_jungle"),
-                        c("sparse_jungle", "jungle", "mangrove_swamp", "willow_swamp"), c("jungle", "bamboo_jungle", "willow_swamp", "mangrove_swamp")},
+                        c("sparse_jungle", "jungle", "mangrove_swamp"), c("jungle", "bamboo_jungle", "mangrove_swamp")},
                 {c("desert"), c("desert"), c("desert", "savanna"), c("jungle", "sparse_jungle", "mangrove_swamp"), c("bamboo_jungle", "jungle", "mangrove_swamp")}});
         TABLES.put(Role.HIGHLAND, new String[][][]{
                 {c("snowy_plains"), c("snowy_plains", "ice_spikes"), c("snowy_taiga"), c("snowy_taiga", "grove"), c("grove", "snowy_taiga")},
                 {c("windswept_gravelly_hills", "windswept_hills"), c("windswept_hills", "plains"), c("windswept_forest", "forest"),
                         c("taiga", "windswept_forest"), c("old_growth_spruce_taiga", "taiga")},
                 {c("meadow", "windswept_hills"), c("meadow", "plains"), c("forest", "cherry_grove", "meadow"),
-                        c("birch_forest", "cherry_grove", "giant_stone_forest"), c("dark_forest", "giant_stone_forest")},
+                        c("birch_forest", "cherry_grove"), c("dark_forest")},
                 {c("savanna_plateau"), c("savanna_plateau", "windswept_savanna"), c("forest", "savanna_plateau"),
-                        c("jungle", "giant_stone_forest"), c("bamboo_jungle", "giant_stone_forest", "jungle")},
+                        c("jungle"), c("bamboo_jungle", "jungle")},
                 {c("badlands", "eroded_badlands"), c("wooded_badlands", "badlands"), c("wooded_badlands", "savanna_plateau"), c("jungle", "sparse_jungle"), c("jungle")}});
         TABLES.put(Role.SLOPE, new String[][][]{
                 {c("snowy_slopes"), c("snowy_slopes"), c("snowy_slopes", "grove"), c("grove", "snowy_slopes"), c("grove")},
                 {c("snowy_slopes"), c("snowy_slopes", "grove"), c("grove", "snowy_slopes"), c("grove"), c("grove")},
-                {c("meadow"), c("meadow"), c("meadow", "cherry_grove"), c("cherry_grove", "meadow", "giant_stone_forest"), c("grove", "giant_stone_forest")},
+                {c("meadow"), c("meadow"), c("meadow", "cherry_grove"), c("cherry_grove", "meadow"), c("grove")},
                 {c("windswept_savanna"), c("windswept_savanna", "savanna_plateau"), c("meadow", "windswept_savanna"),
-                        c("giant_stone_forest", "meadow"), c("giant_stone_forest", "jungle")},
+                        c("meadow"), c("jungle")},
                 {c("eroded_badlands"), c("wooded_badlands", "eroded_badlands"), c("wooded_badlands"), c("jungle"), c("jungle")}});
         TABLES.put(Role.PEAK, new String[][][]{
                 {c("frozen_peaks", "jagged_peaks"), c("frozen_peaks", "jagged_peaks"), c("frozen_peaks", "jagged_peaks"), c("frozen_peaks", "jagged_peaks"), c("frozen_peaks", "jagged_peaks")},
@@ -122,12 +122,12 @@ public final class BiomeCatalog {
         // "" = keep the surface biome underground.
         TABLES.put(Role.CAVE, new String[][][]{
                 {c("", "dripstone_caves"), c("", "dripstone_caves"), c("", "lush_caves"), c("", "lush_caves"), c("", "lush_caves")},
-                {c("", "dripstone_caves", "marble_caves"), c("", "dripstone_caves", "marble_caves"), c("", "lush_caves", "marble_caves"),
+                {c("", "dripstone_caves"), c("", "dripstone_caves"), c("", "lush_caves"),
                         c("", "lush_caves", "glowing_caves"), c("", "lush_caves", "glowing_caves")},
-                {c("", "dripstone_caves", "marble_caves"), c("", "dripstone_caves", "marble_caves"), c("", "lush_caves", "dripstone_caves", "marble_caves"),
+                {c("", "dripstone_caves"), c("", "dripstone_caves"), c("", "lush_caves", "dripstone_caves"),
                         c("", "lush_caves", "glowing_caves"), c("", "lush_caves", "glowing_caves")},
-                {c("", "dripstone_caves", "marble_caves"), c("", "dripstone_caves"), c("", "lush_caves", "dripstone_caves"),
-                        c("", "lush_caves", "glowing_caves", "marble_caves"), c("", "lush_caves", "glowing_caves")},
+                {c("", "dripstone_caves"), c("", "dripstone_caves"), c("", "lush_caves", "dripstone_caves"),
+                        c("", "lush_caves", "glowing_caves"), c("", "lush_caves", "glowing_caves")},
                 {c("", "dripstone_caves"), c("", "dripstone_caves"), c("", "dripstone_caves", "lush_caves"), c("", "lush_caves", "glowing_caves"), c("", "lush_caves")}});
     }
 

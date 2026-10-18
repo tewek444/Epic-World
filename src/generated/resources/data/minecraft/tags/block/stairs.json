@@ -4,6 +4,9 @@
     "epicworld:marble_stairs",
     "epicworld:gray_marble_stairs",
     "epicworld:blue_marble_stairs",
-    "epicworld:polished_marble_stairs"
+    "epicworld:polished_marble_stairs",
+    "epicworld:siltstone_stairs",
+    "epicworld:polished_siltstone_stairs",
+    "epicworld:siltstone_brick_stairs"
   ]
 }

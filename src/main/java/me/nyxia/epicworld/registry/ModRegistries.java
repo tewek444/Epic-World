@@ -50,6 +50,9 @@ public final class ModRegistries {
 
     public static final Supplier<AttachmentType<GenerationStamp>> GENERATION_STAMP = ATTACHMENTS.register("generation",
             () -> AttachmentType.builder(() -> GenerationStamp.NONE).serialize(GenerationStamp.CODEC, s -> s != GenerationStamp.NONE).build());
+    public static final Supplier<AttachmentType<me.nyxia.epicworld.worldgen.deferred.DeferState>> DEFER_STATE = ATTACHMENTS.register("defer",
+            () -> AttachmentType.builder(() -> me.nyxia.epicworld.worldgen.deferred.DeferState.NONE)
+                    .serialize(me.nyxia.epicworld.worldgen.deferred.DeferState.CODEC, s -> s.deferred()).build());
 
     public static void register(IEventBus modBus) {
         DENSITY_FUNCTIONS.register(modBus);

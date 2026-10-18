@@ -26,6 +26,53 @@ public final class TerrainMaps {
             ridges(engine);
             return;
         }
+        if (System.getProperty("epicworld.tunnels") != null) {
+            int size = Integer.parseInt(System.getProperty("epicworld.tunnels"));
+            for (String seed : args[1].split(",")) {
+                var engine = TerrainEngine.get(me.nyxia.epicworld.worldgen.EngineSeed.ofWorldSeed(Long.parseLong(seed)), EpicSettings.DEFAULT);
+                int step = 8;
+                int n = size / step;
+                int[] kinds = new int[4];
+                var examples = new java.util.TreeMap<Integer, String>();
+                for (int i = 0; i < n; i++) {
+                    for (int j = 0; j < n; j++) {
+                        int x = (i - n / 2) * step;
+                        int z = (j - n / 2) * step;
+                        var c = engine.column(x, z);
+                        if (c.tunnelKind == 0) continue;
+                        kinds[c.tunnelKind]++;
+                        examples.putIfAbsent(c.tunnelKind * 1000 + examples.size(), String.format(Locale.ROOT,
+                                "kind %d at %d %d floor %.0f top %.0f surface %.0f", c.tunnelKind, x, z, c.tunnelFloor, c.tunnelTop, c.height));
+                    }
+                }
+                System.out.printf(Locale.ROOT, "seed %s, %d x %d: tunnel columns (8-block grid) plain %d, glowing %d, glowworms %d%n",
+                        seed, size, size, kinds[1], kinds[2], kinds[3]);
+                examples.values().stream().filter(e -> e.contains("floor 20")).limit(400).forEach(e -> System.out.println("  " + e));
+            }
+            return;
+        }
+        if (System.getProperty("epicworld.crossings") != null) {
+            for (String seed : args[1].split(",")) {
+                var engine = TerrainEngine.get(me.nyxia.epicworld.worldgen.EngineSeed.ofWorldSeed(Long.parseLong(seed)), EpicSettings.DEFAULT);
+                crossings(engine, Long.parseLong(seed), Integer.parseInt(System.getProperty("epicworld.crossings")));
+            }
+            return;
+        }
+        if (System.getProperty("epicworld.regions") != null) {
+            String[] spec = System.getProperty("epicworld.regions").split(":");
+            for (String seed : args[1].split(",")) {
+                var engine = TerrainEngine.get(me.nyxia.epicworld.worldgen.EngineSeed.ofWorldSeed(Long.parseLong(seed)), EpicSettings.DEFAULT);
+                regions(engine, Long.parseLong(seed), spec[0], Integer.parseInt(spec[1]));
+            }
+            return;
+        }
+        if (System.getProperty("epicworld.slivers") != null) {
+            for (String seed : args[1].split(",")) {
+                var engine = TerrainEngine.get(me.nyxia.epicworld.worldgen.EngineSeed.ofWorldSeed(Long.parseLong(seed)), EpicSettings.DEFAULT);
+                slivers(engine, Long.parseLong(seed), Integer.parseInt(System.getProperty("epicworld.slivers")));
+            }
+            return;
+        }
         if (System.getProperty("epicworld.probe") != null) {
             var engine = TerrainEngine.get(me.nyxia.epicworld.worldgen.EngineSeed.ofWorldSeed(Long.parseLong(args[1].split(",")[0])), EpicSettings.DEFAULT);
             for (String point : System.getProperty("epicworld.probe").split(";")) {
@@ -78,6 +125,207 @@ public final class TerrainMaps {
     }
 
     /** Finds thin land strips (1-3 blocks) separating the ocean from flooded non-ocean land. */
+    /**
+     * Meetings of rivers of different layers within {@code size} blocks around the origin (4-block grid). A meeting is
+     * a connected patch covered by two layers; it is a crossing when the narrower river leaves the patch in two or more
+     * separate places (it goes through), a junction when it touches it from one side only (a tributary).
+     */
+    static void crossings(TerrainEngine engine, long seed, int size) {
+        int step = 4;
+        int n = size / step;
+        int[][] mask = new int[n][n];
+        IntStream.range(0, n).parallel().forEach(i -> {
+            for (int j = 0; j < n; j++) mask[i][j] = engine.column((i - n / 2) * step, (j - n / 2) * step).riverChannels;
+        });
+        boolean[][] seen = new boolean[n][n];
+        int crossings = 0;
+        int junctions = 0;
+        var examples = new java.util.ArrayList<String>();
+        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (Integer.bitCount(mask[i][j]) < 2 || seen[i][j]) continue;
+                // The patch where two (or more) layers overlap.
+                var patch = new java.util.ArrayList<int[]>();
+                var stack = new java.util.ArrayDeque<int[]>();
+                stack.push(new int[]{i, j});
+                seen[i][j] = true;
+                int both = mask[i][j];
+                while (!stack.isEmpty()) {
+                    int[] q = stack.pop();
+                    patch.add(q);
+                    for (int[] d : dirs) {
+                        int a = q[0] + d[0], b = q[1] + d[1];
+                        if (a < 0 || b < 0 || a >= n || b >= n || seen[a][b] || Integer.bitCount(mask[a][b]) < 2) continue;
+                        seen[a][b] = true;
+                        both |= mask[a][b];
+                        stack.push(new int[]{a, b});
+                    }
+                }
+                int narrow = 31 - Integer.numberOfLeadingZeros(both);
+                // Cells of the narrow river alone next to the patch, grouped into separate arms.
+                var arm = new java.util.HashSet<Long>();
+                for (int[] q : patch) {
+                    for (int[] d : dirs) {
+                        int a = q[0] + d[0], b = q[1] + d[1];
+                        if (a < 0 || b < 0 || a >= n || b >= n) continue;
+                        if (mask[a][b] == 1 << narrow) arm.add((long) a * n + b);
+                    }
+                }
+                int arms = 0;
+                var armSeen = new java.util.HashSet<Long>();
+                for (long start : arm) {
+                    if (armSeen.contains(start)) continue;
+                    arms++;
+                    var s2 = new java.util.ArrayDeque<Long>();
+                    s2.push(start);
+                    armSeen.add(start);
+                    while (!s2.isEmpty()) {
+                        long c = s2.pop();
+                        int a = (int) (c / n), b = (int) (c % n);
+                        for (int dx = -2; dx <= 2; dx++) {
+                            for (int dz = -2; dz <= 2; dz++) {
+                                long o = (long) (a + dx) * n + (b + dz);
+                                if (arm.contains(o) && armSeen.add(o)) s2.push(o);
+                            }
+                        }
+                    }
+                }
+                int[] c = patch.get(patch.size() / 2);
+                if (arms >= 2) {
+                    crossings++;
+                    if (examples.size() < 8) examples.add(((c[0] - n / 2) * step) + "," + ((c[1] - n / 2) * step));
+                } else {
+                    junctions++;
+                }
+            }
+        }
+        System.out.printf(Locale.ROOT, "seed %d, %d x %d blocks: %d crossings, %d junctions; crossings e.g. %s%n",
+                seed, size, size, crossings, junctions, String.join("  ", examples));
+    }
+
+    /**
+     * Connected regions of one surface biome within {@code size} blocks around the origin, sampled every 16 blocks:
+     * count, area, mean height inside and mean height of the ring of other land just outside each region.
+     */
+    static void regions(TerrainEngine engine, long seed, String biome, int size) {
+        int step = 16;
+        int n = size / step;
+        int target = BiomeCatalog.index(biome);
+        int sea = EpicSettings.DEFAULT.world().seaLevel();
+        boolean[][] in = new boolean[n][n];
+        double[][] height = new double[n][n];
+        boolean[][] land = new boolean[n][n];
+        IntStream.range(0, n).parallel().forEach(i -> {
+            for (int j = 0; j < n; j++) {
+                int ox = Integer.getInteger("epicworld.regionsX", 0);
+                int oz = Integer.getInteger("epicworld.regionsZ", 0);
+                var c = engine.column(ox + (i - n / 2) * step, oz + (j - n / 2) * step);
+                in[i][j] = c.biome == target;
+                height[i][j] = c.height;
+                land[i][j] = c.height >= sea;
+            }
+        });
+        boolean[][] seen = new boolean[n][n];
+        var sizes = new java.util.ArrayList<String>();
+        int count = 0;
+        long cells = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (!in[i][j] || seen[i][j]) continue;
+                var stack = new java.util.ArrayDeque<int[]>();
+                stack.push(new int[]{i, j});
+                seen[i][j] = true;
+                int area = 0;
+                double sum = 0;
+                long sumX = 0;
+                long sumZ = 0;
+                double ringSum = 0;
+                int ring = 0;
+                var ringSeen = new java.util.HashSet<Long>();
+                while (!stack.isEmpty()) {
+                    int[] q = stack.pop();
+                    area++;
+                    sum += height[q[0]][q[1]];
+                    sumX += q[0];
+                    sumZ += q[1];
+                    for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                        int a = q[0] + d[0];
+                        int b = q[1] + d[1];
+                        if (a < 0 || b < 0 || a >= n || b >= n) continue;
+                        if (in[a][b]) {
+                            if (!seen[a][b]) {
+                                seen[a][b] = true;
+                                stack.push(new int[]{a, b});
+                            }
+                        } else if (land[a][b] && ringSeen.add((long) a * n + b)) {
+                            ringSum += height[a][b];
+                            ring++;
+                        }
+                    }
+                }
+                count++;
+                cells += area;
+                if (sizes.size() < 400) sizes.add(String.format(Locale.ROOT, "%d:%.0f/%.0f@%d,%d", area,
+                        sum / area - sea, ring == 0 ? Double.NaN : ringSum / ring - sea, (sumX / area - n / 2) * step, (sumZ / area - n / 2) * step));
+            }
+        }
+        sizes.sort(java.util.Comparator.comparingInt((String t) -> Integer.parseInt(t.substring(0, t.indexOf(':')))).reversed());
+        System.out.printf(Locale.ROOT, "seed %d, %s in %d x %d blocks: %d regions, %.2f %% of the area, %.1f km2%n", seed, biome,
+                size, size, count, 100.0 * cells / ((double) n * n), cells * step * step / 1e6);
+        System.out.println("  largest (cells of 16x16 : height inside / height around, above sea @ centre x,z): "
+                + String.join("  ", sizes.subList(0, Math.min(12, sizes.size()))));
+    }
+
+    /**
+     * Counts thin strips of land in the water: dry columns at most 3 blocks wide between water on both sides along x or
+     * z, within {@code size} blocks around the origin. Prints the count per cause and a few examples.
+     */
+    static void slivers(TerrainEngine engine, long seed, int size) {
+        int sea = EpicSettings.DEFAULT.world().seaLevel();
+        int n = size / 2;
+        var counts = new TreeMap<String, Integer>();
+        var examples = new TreeMap<String, String>();
+        int[] total = {0};
+        String out = System.getProperty("epicworld.sliversOut");
+        java.util.List<String> all = out == null ? null : new java.util.ArrayList<>();
+        IntStream.range(-n, n).parallel().forEach(z -> {
+            boolean[] wet = new boolean[size + 2];
+            String[] biome = new String[size + 2];
+            for (int i = 0; i < size + 2; i++) {
+                var c = engine.column(i - n - 1, z);
+                wet[i] = c.height < sea;
+                biome[i] = BiomeCatalog.get(c.biome).path();
+            }
+            for (int i = 1; i < size + 1; i++) {
+                if (wet[i] || !wet[i - 1]) continue;
+                int j = i;
+                while (j < size + 1 && !wet[j]) j++;
+                if (j < size + 1 && j - i <= 3) {
+                    // Cause: the water biomes on either side.
+                    String key = biome[i - 1] + " | " + biome[j];
+                    synchronized (counts) {
+                        counts.merge(key, 1, Integer::sum);
+                        examples.putIfAbsent(key, (i - n - 1) + " " + z);
+                        if (all != null) all.add(key + ";" + (i - n - 1) + ";" + z);
+                        total[0]++;
+                    }
+                }
+                i = j;
+            }
+        });
+        System.out.printf(Locale.ROOT, "seed %d, %d x %d blocks: %d thin strips%n", seed, size, size, total[0]);
+        counts.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).limit(15)
+                .forEach(e -> System.out.printf(Locale.ROOT, "  %6d  %-40s e.g. %s%n", e.getValue(), e.getKey(), examples.get(e.getKey())));
+        if (all != null) {
+            try {
+                Files.write(Path.of(out + "-" + seed + ".txt"), all.stream().sorted().toList());
+            } catch (IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        }
+    }
+
     static void ridges(TerrainEngine engine) {
         int found = 0;
         var kinds = new TreeMap<String, Integer>();
@@ -252,6 +500,7 @@ public final class TerrainMaps {
             case "willow_swamp" -> 0x5E7F3C;
             case "mushroom_fields" -> 0xB07CC6;
             case "giant_stone_forest" -> 0x7E8C6A;
+            case "dry_riverbed" -> 0xA0805A;
             case "lush_caves", "dripstone_caves", "deep_dark", "marble_caves", "glowing_caves" -> 0x303030;
             default -> 0xFF00FF;
         };

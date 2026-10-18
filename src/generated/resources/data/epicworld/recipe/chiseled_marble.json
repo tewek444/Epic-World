@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "#": {
+      "item": "epicworld:marble_slab"
+    }
+  },
+  "pattern": [
+    "#",
+    "#"
+  ],
+  "result": {
+    "count": 1,
+    "id": "epicworld:chiseled_marble"
+  }
+}
