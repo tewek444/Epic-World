@@ -57,6 +57,7 @@ public final class EpicWorld {
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.pregen.Pregenerator::onServerStopping);
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.pregen.Pregenerator::onTick);
         modBus.addListener(me.nyxia.epicworld.network.EpicNetwork::register);
+        modBus.addListener(me.nyxia.epicworld.integration.LightEngineCompat::enqueue);
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.worldgen.deferred.DeepFiller::onLoad);
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.worldgen.deferred.DeepFiller::onTick);
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> me.nyxia.epicworld.worldgen.deferred.DeepFiller.clear());
