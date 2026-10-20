@@ -12,6 +12,7 @@ public final class EpicClient {
     public static void register(IEventBus modBus) {
         modBus.addListener(EpicClient::setup);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(DebugOverlay::onDebugText);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(LodReceiver::onLogin);
     }
 
     /** Closes the game like the quit button (used by the automatic benchmark). */

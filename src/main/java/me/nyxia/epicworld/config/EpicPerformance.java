@@ -14,7 +14,9 @@ public final class EpicPerformance {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue FAST_GENERATION;
     public static final ModConfigSpec.BooleanValue DEFERRED_CAVES;
+    public static final ModConfigSpec.BooleanValue VOXY_RECEIVE;
     public static final ModConfigSpec.BooleanValue VOXY_ENABLED;
+    public static final ModConfigSpec.BooleanValue VOXY_GENERATE;
     public static final ModConfigSpec.IntValue VOXY_RADIUS;
     public static final ModConfigSpec.IntValue VOXY_THREADS;
     public static final ModConfigSpec.BooleanValue VOXY_FEATURES;
@@ -40,10 +42,18 @@ public final class EpicPerformance {
                 .define("deferred_caves", false);
         b.pop();
 
-        b.comment("Своя генерация лодов для Voxy (вместо Voxy World Gen). Лоды строятся из верхней части чанков,",
-                "которые не сохраняются на диск: когда игрок дойдёт до места, настоящий чанк сгенерируется с тем же рельефом.",
-                "Работает в одиночной игре и на сервере в локальной сети (на выделенном сервере лоды не передаются).").push("voxy");
-        VOXY_ENABLED = b.comment("Включить, если установлен Voxy.").define("enabled", true);
+        b.comment("Лоды для Voxy (вместо Voxy World Gen): сервер отправляет игрокам с Voxy секции чанков вокруг них.",
+                "Сохранённые чанки читаются с диска (с постройками), остальные генерируются в памяти и не сохраняются: когда",
+                "игрок дойдёт до места, настоящий чанк сгенерируется с тем же рельефом. Работает на выделенном сервере, в",
+                "одиночной игре и по локальной сети. Epic World нужен и на сервере, и у игрока; Voxy — только у игрока.",
+                "receive действует у игрока; остальные настройки — у того, кто генерирует лоды: на выделенном сервере берётся",
+                "конфиг сервера, в одиночной игре и при открытии в локальную сеть — ваш.").push("voxy");
+        VOXY_RECEIVE = b.comment("Получать лоды с сервера (или из своей одиночной игры). Нужен Voxy.").define("receive", true);
+        VOXY_ENABLED = b.comment("Генерировать и раздавать лоды (если установлен Voxy World Gen, не работает, чтобы не делать работу дважды).").define("enabled", true);
+        VOXY_GENERATE = b.comment(
+                "Генерировать недостающие лоды вокруг игрока. Если выключить, игроки получают только чанки, которые",
+                "сгенерировал сам мир, по мере их появления (например, во время /epicworld gen).")
+                .define("generate", true);
         VOXY_RADIUS = b.comment("Радиус генерации лодов вокруг игрока, в чанках.").defineInRange("radius", 256, 16, 2048);
         VOXY_THREADS = b.comment("Потоков для генерации лодов (0 = половина ядер процессора).").defineInRange("threads", 0, 0, 64);
         VOXY_SHAPE = b.comment("Форма области лодов: CIRCLE (круг, как прорисовка Minecraft) или SQUARE (квадрат).")

@@ -30,7 +30,7 @@ public final class ParallelGeneration {
     public static CompletableFuture<ChunkAccess> asyncLocked(WorldGenContext context, net.minecraft.world.level.ChunkPos pos,
                                                              Supplier<CompletableFuture<ChunkAccess>> step) {
         if (!enabled() || !(context.generator() instanceof EpicChunkGenerator)) return step.get();
-        return CompletableFuture.supplyAsync(() -> withLocks(pos, step), Util.backgroundExecutor()).thenCompose(f -> f);
+        return submit(() -> withLocks(pos, step));
     }
 
     /** Runs {@code body} holding the locks of the 3x3 chunks around {@code pos}. */
@@ -63,6 +63,24 @@ public final class ParallelGeneration {
 
     public static CompletableFuture<ChunkAccess> async(WorldGenContext context, Supplier<CompletableFuture<ChunkAccess>> step) {
         if (!enabled() || !(context.generator() instanceof EpicChunkGenerator)) return step.get();
-        return CompletableFuture.supplyAsync(step, Util.backgroundExecutor()).thenCompose(f -> f);
+        return submit(step);
+    }
+
+    /**
+     * Runs a step on the worker pool as a plain task. Not {@code CompletableFuture.supplyAsync}: its tasks are ones a
+     * worker blocked in {@code join()} runs itself while waiting, so a step waiting for the stronghold rings of a new
+     * world ran the next step on the same stack, which waited too, and so on until the stack overflowed (and a feature
+     * step holding its locks could run another one inside them).
+     */
+    private static CompletableFuture<ChunkAccess> submit(Supplier<CompletableFuture<ChunkAccess>> step) {
+        CompletableFuture<CompletableFuture<ChunkAccess>> started = new CompletableFuture<>();
+        Util.backgroundExecutor().execute(() -> {
+            try {
+                started.complete(step.get());
+            } catch (Throwable e) {
+                started.completeExceptionally(e);
+            }
+        });
+        return started.thenCompose(f -> f);
     }
 }

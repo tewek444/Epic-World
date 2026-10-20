@@ -34,12 +34,15 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * with as many chunks in flight as the (parallel) generation takes. Generated chunks also go to Voxy, so the area gets
  * LODs. One task at a time; it is saved in the world and continues after a restart.
  * <p>
- * Chunks are visited in 32x32 tiles (about one region file each), row by row inside a tile.
+ * Chunks are visited in 16x16 tiles, the tiles in rings around the centre of the area (nearest first, by angle inside a
+ * ring), so the world (and its LODs) grows around the player. Inside a tile chunks go row by row: the chunks in flight
+ * stay a compact block, whose unfinished neighbours (every chunk needs them about ten chunks around) fit in memory; a
+ * thin arc of single chunks needed about four times as many.
  */
 public final class Pregenerator {
     private static final TicketType<ChunkPos> TICKET = TicketType.create("epicworld_pregen", Comparator.comparingLong(ChunkPos::toLong));
     private static final int IN_FLIGHT = 256;
-    private static final int TILE = 32;
+    private static final int TILE = 16;
 
     @Nullable private static Pregenerator task;
 
@@ -159,14 +162,20 @@ public final class Pregenerator {
             if (chunk == null) continue;
             ChunkPos pos = chunk.getPos();
             source.removeRegionTicket(TICKET, pos, 0, pos);
-            if (EpicPerformance.get(EpicPerformance.VOXY_ENABLED)) VoxyBridge.ingestChunk(level, chunk);
+            if (EpicPerformance.get(EpicPerformance.VOXY_ENABLED)) {
+                VoxyBridge.ingestChunk(level, chunk);
+                me.nyxia.epicworld.voxy.LodGenerator.offer(level, chunk);
+            }
             inFlight.removeLong(i);
             inFlightIndex.removeLong(i);
             done++;
         }
         // Ask for more.
-        long size = (long) tilesX() * tilesZ() * TILE * TILE;
-        while (inFlight.size() < IN_FLIGHT && cursor < size) {
+        long size = indexCount();
+        // Ask for less while the server falls behind (saving, other players) or players' LOD queues are full.
+        int limit = server.getAverageTickTimeNanos() > 45_000_000L ? IN_FLIGHT / 4 : IN_FLIGHT;
+        if (me.nyxia.epicworld.voxy.LodGenerator.backlogged()) limit = 0;
+        while (inFlight.size() < limit && cursor < size) {
             long index = cursor++;
             ChunkPos pos = posAt(index);
             if (pos == null) continue;
@@ -216,27 +225,85 @@ public final class Pregenerator {
         if (player != null) player.displayClientMessage(message, true);
     }
 
-    private int tilesX() {
-        return (x2 - x1) / TILE + 1;
+    private int centerX() {
+        return Math.floorDiv(x1 + x2, 2);
     }
 
-    private int tilesZ() {
-        return (z2 - z1) / TILE + 1;
+    private int centerZ() {
+        return Math.floorDiv(z1 + z2, 2);
+    }
+
+    /** Rings of tiles up to the farthest corner of the area. */
+    private int lastRing() {
+        long dx = Math.max(centerX() - x1, x2 - centerX());
+        long dz = Math.max(centerZ() - z1, z2 - centerZ());
+        return (int) Math.ceil(Math.sqrt(dx * dx + dz * dz) / TILE) + 1;
+    }
+
+    /** Lattice points (dx, dz) with dx² + dz² < n. */
+    private static long pointsWithin(long n) {
+        if (n <= 0) return 0;
+        long count = 0;
+        long max = isqrt(n - 1);
+        for (long dx = -max; dx <= max; dx++) count += 2 * isqrt(n - 1 - dx * dx) + 1;
+        return count;
+    }
+
+    private static long isqrt(long n) {
+        long r = (long) Math.sqrt(n);
+        while (r * r > n) r--;
+        while ((r + 1) * (r + 1) <= n) r++;
+        return r;
+    }
+
+    private long indexCount() {
+        long ring = lastRing();
+        return pointsWithin((ring + 1) * (ring + 1)) * TILE * TILE;
+    }
+
+    // The ring of tiles being walked: its first tile index and its tiles (offsets from the centre tile), by angle.
+    private int ring = -1;
+    private long ringStart;
+    private final LongArrayList ringPoints = new LongArrayList();
+
+    private void loadRing(int r) {
+        ring = r;
+        ringStart = pointsWithin((long) r * r);
+        ringPoints.clear();
+        long inner = (long) r * r;
+        long outer = (long) (r + 1) * (r + 1);
+        for (int dx = -r - 1; dx <= r + 1; dx++) {
+            long rest = (long) dx * dx;
+            if (rest >= outer) continue;
+            long from = inner - rest <= 0 ? 0 : isqrt(inner - rest - 1) + 1;
+            long to = isqrt(outer - 1 - rest);
+            for (long dz = from; dz <= to; dz++) {
+                ringPoints.add(ChunkPos.asLong(dx, (int) dz));
+                if (dz != 0) ringPoints.add(ChunkPos.asLong(dx, (int) -dz));
+            }
+        }
+        long[] points = ringPoints.toLongArray();
+        Long[] boxed = new Long[points.length];
+        for (int i = 0; i < points.length; i++) boxed[i] = points[i];
+        java.util.Arrays.sort(boxed, Comparator.comparingDouble(p -> Math.atan2(ChunkPos.getZ(p), ChunkPos.getX(p))));
+        ringPoints.clear();
+        for (Long p : boxed) ringPoints.add(p.longValue());
     }
 
     @Nullable
     private ChunkPos posAt(long index) {
         long tile = index / (TILE * TILE);
         int local = (int) (index % (TILE * TILE));
-        int tx = (int) (tile % tilesX());
-        int tz = (int) (tile / tilesX());
-        int x = x1 + tx * TILE + local % TILE;
-        int z = z1 + tz * TILE + local / TILE;
+        if (ring < 0 || tile < ringStart) loadRing(0);
+        while (tile >= ringStart + ringPoints.size()) loadRing(ring + 1);
+        long offset = ringPoints.getLong((int) (tile - ringStart));
+        int x = centerX() - TILE / 2 + ChunkPos.getX(offset) * TILE + local % TILE;
+        int z = centerZ() - TILE / 2 + ChunkPos.getZ(offset) * TILE + local / TILE;
         return inArea(x, z) ? new ChunkPos(x, z) : null;
     }
 
     private boolean inArea(int x, int z) {
-        if (x > x2 || z > z2) return false;
+        if (x < x1 || z < z1 || x > x2 || z > z2) return false;
         if (!circle) return true;
         double cx = (x1 + x2) / 2.0;
         double cz = (z1 + z2) / 2.0;

@@ -27,8 +27,11 @@ final class SodiumPage {
                 .addOption(bool(b, "deferred_caves", EpicPerformance.DEFERRED_CAVES, save));
 
         int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
-        var voxy = b.createOptionGroup().setName(Component.translatable("epicworld.options.group.voxy"))
+        var receive = b.createOptionGroup().setName(Component.translatable("epicworld.options.group.voxy"))
+                .addOption(bool(b, "voxy_receive", EpicPerformance.VOXY_RECEIVE, save));
+        var voxy = b.createOptionGroup().setName(Component.translatable("epicworld.options.group.voxy_host"))
                 .addOption(bool(b, "voxy_enabled", EpicPerformance.VOXY_ENABLED, save))
+                .addOption(bool(b, "voxy_generate", EpicPerformance.VOXY_GENERATE, save))
                 .addOption(integer(b, "voxy_radius", EpicPerformance.VOXY_RADIUS, save, 16, 2048, 16,
                         v -> Component.translatable("epicworld.unit.chunks", v)))
                 .addOption(shape(b, save))
@@ -39,6 +42,7 @@ final class SodiumPage {
         b.registerModOptions(MODID, "Epic World", version)
                 .addPage(b.createOptionPage().setName(Component.translatable("epicworld.options.page"))
                         .addOptionGroup(generation)
+                        .addOptionGroup(receive)
                         .addOptionGroup(voxy));
     }
 

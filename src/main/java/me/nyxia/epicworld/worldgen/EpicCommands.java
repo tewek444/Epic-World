@@ -48,7 +48,10 @@ public final class EpicCommands {
                         .then(Commands.literal("status").executes(c -> genStatus(c.getSource()))))
                 .then(Commands.literal("voxy")
                         .executes(c -> voxyStatus(c.getSource()))
-                        .then(Commands.literal("reset").executes(c -> voxyReset(c.getSource()))))
+                        .then(Commands.literal("reset").executes(c -> voxyReset(c.getSource(), null))
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player())
+                                        .executes(c -> voxyReset(c.getSource(),
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayer(c, "player"))))))
                 .then(Commands.literal("deferred")
                         .executes(c -> deferredStatus(c.getSource()))
                         .then(Commands.literal("fill").then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 16))
@@ -140,14 +143,16 @@ public final class EpicCommands {
         return 1;
     }
 
-    private static int voxyReset(CommandSourceStack source) {
+    private static int voxyReset(CommandSourceStack source, @javax.annotation.Nullable net.minecraft.server.level.ServerPlayer player) {
         var g = me.nyxia.epicworld.voxy.LodGenerator.active();
         if (g == null) {
-            source.sendFailure(Component.literal("Генерация лодов не работает в этом мире."));
+            source.sendFailure(Component.literal("Лоды Voxy не работают в этом мире."));
             return 0;
         }
-        g.reset();
-        source.sendSuccess(() -> Component.literal("Список готовых лодов очищен, они будут построены заново."), false);
+        g.reset(player == null ? null : player.getUUID());
+        source.sendSuccess(() -> Component.literal(player == null
+                ? "Список отправленных лодов очищен у всех игроков, они будут отправлены заново."
+                : "Список отправленных лодов игрока " + player.getName().getString() + " очищен."), true);
         return 1;
     }
 

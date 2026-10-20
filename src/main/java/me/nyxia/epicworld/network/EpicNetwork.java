@@ -50,6 +50,14 @@ public final class EpicNetwork {
         registrar.playToClient(OpenPregen.TYPE, OpenPregen.CODEC,
                 (payload, context) -> context.enqueueWork(() -> me.nyxia.epicworld.client.PregenScreen.open(payload)));
         registrar.playToServer(PregenAction.TYPE, PregenAction.CODEC, EpicNetwork::handleAction);
+        registrar.playToServer(me.nyxia.epicworld.voxy.LodPayloads.Hello.TYPE, me.nyxia.epicworld.voxy.LodPayloads.Hello.CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (payload.protocol() == me.nyxia.epicworld.voxy.LodPayloads.Hello.PROTOCOL && context.player() instanceof ServerPlayer player) {
+                        me.nyxia.epicworld.voxy.LodGenerator.hello(player);
+                    }
+                }));
+        registrar.playToClient(me.nyxia.epicworld.voxy.LodPayloads.Chunk.TYPE, me.nyxia.epicworld.voxy.LodPayloads.Chunk.CODEC,
+                (payload, context) -> context.enqueueWork(() -> me.nyxia.epicworld.client.LodReceiver.receive(payload)));
     }
 
     public static void openScreen(ServerPlayer player) {

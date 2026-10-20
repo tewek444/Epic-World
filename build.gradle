@@ -250,3 +250,19 @@ tasks.register('renderTerrainMaps', JavaExec) {
     if (project.hasProperty('sliversOut')) systemProperty 'epicworld.sliversOut', project.property('sliversOut')
     notCompatibleWithConfigurationCache('dev tool')
 }
+
+// Auto-incrementing build number, embedded in the jar file name only
+// (mod metadata keeps the plain mod_version). The counter file is only
+// written when the jar task actually executes, so IDE syncs and
+// up-to-date builds never bump it.
+def buildNumberFile = file("build-number.txt")
+if (!buildNumberFile.exists()) {
+    buildNumberFile.text = "1"
+}
+def buildNumber = buildNumberFile.text.trim().toInteger()
+tasks.named("jar", Jar).configure {
+    archiveVersion = "${mod_version}+build.${buildNumber}"
+    doLast {
+        buildNumberFile.text = "${buildNumber + 1}"
+    }
+}

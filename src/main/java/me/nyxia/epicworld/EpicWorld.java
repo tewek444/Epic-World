@@ -53,6 +53,7 @@ public final class EpicWorld {
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.voxy.LodGenerator::onServerStarted);
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.voxy.LodGenerator::onServerStopping);
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.voxy.LodGenerator::onTick);
+        NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.voxy.LodGenerator::onLogout);
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.pregen.Pregenerator::onServerStarted);
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.pregen.Pregenerator::onServerStopping);
         NeoForge.EVENT_BUS.addListener(me.nyxia.epicworld.pregen.Pregenerator::onTick);
