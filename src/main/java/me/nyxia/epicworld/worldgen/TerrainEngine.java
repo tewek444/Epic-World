@@ -61,6 +61,16 @@ public final class TerrainEngine {
     private final double[] riverPeriods;
     private final Fbm delta;
     private final Fbm rough;
+    // Relief (Alpha 3): regional elevation with escarpments, mountain kinds and giant ranges.
+    private final Fbm provinces;
+    private final Fbm tablelands;
+    private final Fbm stepHeight;
+    private final Fbm giantBelt;
+    private final Fbm mountainClass;
+    private final Fbm mountainSharpness;
+    private final Fbm mountainWidth;
+    private final Fbm mountainDetail;
+    private final Fbm uplift;
 
     private final double oceanThreshold;
     private final double continentSigma;
@@ -126,6 +136,15 @@ public final class TerrainEngine {
         riverWidth = new Fbm(Hash.mix(seed, ++salt), 2, 0.5);
         delta = new Fbm(Hash.mix(seed, ++salt), 2, 0.4);
         rough = new Fbm(Hash.mix(seed, ++salt), 2, 0.5);
+        provinces = new Fbm(Hash.mix(seed, ++salt), 4, 0.5);
+        tablelands = new Fbm(Hash.mix(seed, ++salt), 2, 0.5);
+        stepHeight = new Fbm(Hash.mix(seed, ++salt), 2, 0.5);
+        giantBelt = new Fbm(Hash.mix(seed, ++salt), 3, 0.5);
+        mountainClass = new Fbm(Hash.mix(seed, ++salt), 2, 0.5);
+        mountainSharpness = new Fbm(Hash.mix(seed, ++salt), 2, 0.5);
+        mountainWidth = new Fbm(Hash.mix(seed, ++salt), 2, 0.5);
+        mountainDetail = new Fbm(Hash.mix(seed, ++salt), 7, 0.42);
+        uplift = new Fbm(Hash.mix(seed, ++salt), 3, 0.5);
         var r = settings.rivers();
         int layers = r.maxWidth() == r.minWidth() ? 1 : r.maxWidth() <= 2 * r.minWidth() ? 2 : 4;
         riverLayers = new Fbm[layers];
@@ -208,6 +227,8 @@ public final class TerrainEngine {
         public boolean river;
         /** Bit k set where the channel of river layer k (0 = widest) covers this column; for diagnostics. */
         public int riverChannels;
+        /** For diagnostics: lowest share of a river kept here (1 = full river, 0 = faded out), or NaN off any channel. */
+        public double riverKeep = Double.NaN;
         /** River tunnel through a mountain: air between floor and top (absolute Y); kind 0 = none. */
         public double tunnelFloor;
         public double tunnelTop = Double.NEGATIVE_INFINITY;
@@ -287,30 +308,60 @@ public final class TerrainEngine {
         return (rawContinent(x, z) - oceanThreshold) / continentSigma;
     }
 
-    private record Base(double height, double land, double mountain, double hilliness, double depthFactor) {}
+    /** {@code valley}: the land without hills and mountains, where rivers flow (sea level for ocean columns). */
+    private record Base(double height, double land, double mountain, double hilliness, double depthFactor, double valley) {}
 
     /** Continents, mountains and ocean floor before islands, biome shaping, lakes and rivers. */
     private Base base(double x, double z) {
         double l = land(x, z);
         if (l >= 0) {
-            double inland = smooth(0, 0.7, l);
             double coastFade = smooth(0, 0.18, l);
+            double span = top - sea;
+            double pw = 1100;
+            double px = x + pw * warpX.sample(x + 7100, z - 2300, 4200);
+            double pz = z + pw * warpZ.sample(x - 5300, z + 6100, 4200);
+            double valley = valley(x, z, l);
+            double up = valley - sea;
+
+            // ---- hills everywhere, stronger in hill country and at the foot of mountains
+            double hilliness = smooth(-0.35, 0.5, hillMask.sample(x, z, 6500));
+
+            // ---- mountains: ranges along ridged belts, each with its own size, sharpness and width
+            double width = 0.5 + 0.5 * mountainWidth.sample(x, z, 15000);
             double belt = mountainBelt.ridged(x + 900, z - 1300, 17000);
-            double mountain = smooth(0.4, 0.68, belt) * smooth(0.03, 0.45, l);
+            double mountain = smooth(lerp(width, 0.56, 0.36), lerp(width, 0.74, 0.62), belt) * smooth(0.03, 0.4, l);
             double massif = smooth(0.35, 0.7, hillMask.sample(x - 4000, z + 2500, 9000)) * smooth(0.1, 0.8, l) * 0.6;
             mountain = Math.max(mountain, massif * smooth(0.3, 0.55, belt));
-            // Main ridges every ~1.4 km, secondary crests and gullies on their flanks.
-            double ridge = peaks.ridged(x, z, 1400);
-            double crest = hills.ridged(x + 3100, z - 700, 420);
-            double mountainHeight = mountain * ((top - sea - 70) * (0.25 + 0.75 * Math.pow(ridge, 1.35))
-                    + 55 * (crest - 0.35) * smooth(0.1, 0.6, ridge));
-            double hilliness = smooth(-0.25, 0.55, hillMask.sample(x, z, 7000));
-            double hillHeight = hilliness * 40 * (0.5 + 0.5 * hills.sample(x, z, 950)) * coastFade;
-            double rise = Math.pow(smooth(0, 0.55, l), 0.55);
-            // Land starts 1.5 blocks above the water so the coastline is a clean edge, not a flooded flat.
-            double low = 1.5 + 6 * smooth(0, 0.04, l) + 44 * rise * (0.55 + 0.45 * lowland.sample(x, z, 5200))
-                    + 3 * Math.max(0, detail.sample(x, z, 180)) * coastFade;
-            return new Base(sea + low + hillHeight + mountainHeight, l, mountain, hilliness, 0);
+            double size = smooth(-0.35, 0.45, mountainClass.sample(x, z, 21000));
+            double sharp = smooth(-0.3, 0.4, mountainSharpness.sample(x, z, 16000));
+            double maxH = Math.min(span - 50, span * lerp(size, 0.11, 0.36));
+            double mountainHeight = 0;
+            if (mountain > 0) {
+                double relief = mountainRelief(x, z, lerp(size, 1100, 1900), sharp, 0);
+                mountainHeight = maxH * Math.pow(mountain, 0.7) * (0.12 + 0.88 * relief);
+                // Wide ranges with soft relief become table mountains: steep sides, a broad top.
+                double flatTop = smooth(0.62, 0.9, width) * (1 - 0.7 * sharp);
+                if (flatTop > 0) {
+                    double cap = maxH * (0.45 + 0.1 * relief);
+                    double capped = cap + 8 * Math.tanh((mountainHeight - cap) / 24);
+                    mountainHeight = lerp(flatTop, mountainHeight, Math.min(mountainHeight, capped));
+                }
+            }
+
+            // ---- giant ranges: rare, long cordilleras up to the top of the world
+            double giant = giantMask(x, z, l, px, pz);
+            if (giant > 0) {
+                double relief = mountainRelief(x + 5000, z - 3000, 4200, 0.45, 1);
+                double giantHeight = (span - 40) * Math.pow(giant, 0.6) * (0.1 + 0.9 * relief);
+                if (giantHeight > mountainHeight) mountainHeight = giantHeight;
+                mountain = Math.max(mountain, giant);
+            }
+
+            double foothills = smooth(0, 0.45, mountain);
+            // Highlands are more rugged than coastal plains.
+            double hillAmp = (14 + 44 * hilliness + 30 * foothills) * coastFade * (1 + Math.max(0, up - 40) / 450);
+            double hillHeight = hillAmp * (0.5 + 0.5 * hills.eroded(x, z, 760));
+            return new Base(valley + hillHeight + mountainHeight, l, mountain, Math.max(hilliness, foothills), 0, valley);
         }
         double u = -l;
         double normal = 40 + 110 * (0.5 + 0.5 * oceanDepth.sample(x, z, 9000));
@@ -328,7 +379,149 @@ public final class TerrainEngine {
             d += smooth(0.88, 0.985, t) * smooth(0.75, 1.5, u) * Math.max(0, oceanUsableDepth - d);
         }
         d = Math.max(2.5, Math.min(oceanUsableDepth, d));
-        return new Base(sea - d, l, 0, 0, smooth(0.3, 1.0, u));
+        return new Base(sea - d, l, 0, 0, smooth(0.3, 1.0, u), sea);
+    }
+
+    /**
+     * Mountain relief in [0, 1] at a period (spacing of the main ridges): sharp = ridged multifractal (knife-edge crests,
+     * V-shaped valleys), soft = eroded fbm (rounded summits, broad valleys). Domain-warped so ridges curve and branch.
+     * {@code extra} raises the contrast for giant ranges.
+     */
+    private double mountainRelief(double x, double z, double period, double sharp, int extra) {
+        double wx = x + 0.3 * period * warpX.sample(x + 300, z, period * 0.9);
+        double wz = z + 0.3 * period * warpZ.sample(x, z - 300, period * 0.9);
+        double soft = 0.5 + 0.5 * mountainDetail.eroded(wx, wz, period * 1.3);
+        double ridged = Math.min(1, mountainDetail.ridgedSoft(wx, wz, period, 0.02) * 1.35);
+        double r = lerp(sharp, soft, 0.75 * ridged + 0.25 * soft);
+        return Math.pow(Math.max(0, r), 1.25 + 0.35 * extra);
+    }
+
+    /**
+     * The smooth part of the land at a column: the rise from the coast, the continental uplift (low coasts, highlands
+     * hundreds of blocks above the sea inland, basins between them) and the plateaus. Hills and mountains stand on it,
+     * rivers flow at its height.
+     */
+    private double valley(double x, double z, double l) {
+        double span = top - sea;
+        double coastFade = smooth(0, 0.18, l);
+        double rise = Math.pow(smooth(0, 0.55, l), 0.55);
+        // Land starts 1.5 blocks above the water so the coastline is a clean edge, not a flooded flat.
+        double low = 1.5 + 6 * smooth(0, 0.04, l) + 26 * rise * (0.55 + 0.45 * lowland.sample(x, z, 5200))
+                + 3 * Math.max(0, detail.sample(x, z, 180)) * coastFade;
+        double interior = smooth(0.12, 0.85, l);
+        double highland = smooth(-0.45, 0.55, uplift.sample(x + 2100, z - 8800, 34000));
+        double up = 0.34 * span * interior * (0.25 + 0.75 * highland);
+        double open = 1 - riverCorridor(x, z);
+        up *= open;
+        // Plateaus: in tableland country the levels are flat and separated by escarpments (a drop of a few dozen
+        // blocks to the next plateau); elsewhere the same field rises and falls gently.
+        double inland = smooth(0.04, 0.5, l);
+        double pw = 1100;
+        double px = x + pw * warpX.sample(x + 7100, z - 2300, 4200);
+        double pz = z + pw * warpZ.sample(x - 5300, z + 6100, 4200);
+        double level = Math.max(0, (provinces.sample(px, pz, 12000) + 0.12) / 0.15);
+        double table = smooth(-0.05, 0.35, tablelands.sample(x, z, 18000));
+        int k = (int) level;
+        double f = level - k;
+        double cliff = 0.1 + 0.08 * (0.5 + 0.5 * stepHeight.sample(x + 900, z, 700));
+        double stepped = k + smooth(1 - cliff, 1, f);
+        double levels = Math.min(4.5, lerp(table, level * 0.8, stepped));
+        double stepH = (30 + 22 * (0.5 + 0.5 * stepHeight.sample(x, z, 6000))) * Math.min(1, span / 400.0);
+        return sea + low + up + levels * stepH * inland * open;
+    }
+
+    /** Grid step of the river corridor field (it is smooth over hundreds of blocks). */
+    private static final int CORRIDOR_GRID = 16;
+    private final SharedCache<double[]> corridorCache = new SharedCache<>(1 << 16);
+
+    /**
+     * How much of the uplift a river valley removes at a column: 1 near a river's course, 0 away from it. The valley is
+     * broader for wider rivers. Interpolated from a 16-block grid of exact values.
+     */
+    private double riverCorridor(double x, double z) {
+        if (!settings.rivers().enabled() || Boolean.getBoolean("epicworld.noCorridors")) return 0;
+        double gx = x / CORRIDOR_GRID;
+        double gz = z / CORRIDOR_GRID;
+        int ix = (int) Math.floor(gx);
+        int iz = (int) Math.floor(gz);
+        double tx = gx - ix;
+        double tz = gz - iz;
+        double a = corridorAt(ix, iz);
+        double b = corridorAt(ix + 1, iz);
+        double c = corridorAt(ix, iz + 1);
+        double d = corridorAt(ix + 1, iz + 1);
+        return lerp(tz, lerp(tx, a, b), lerp(tx, c, d));
+    }
+
+    private static final ThreadLocal<StringBuilder> DEBUG_RIVERS = new ThreadLocal<>();
+
+    /** Diagnostics: base height, valley floor, mountain mask, giant mask and the column height without lakes. */
+    public String debugColumn(int x, int z) {
+        Base b = base(x, z);
+        DEBUG_RIVERS.set(new StringBuilder());
+        Column noLakes = compute(x, z, false);
+        String riverLog = DEBUG_RIVERS.get().toString();
+        DEBUG_RIVERS.remove();
+        Role role = landRole(b.height, b);
+        Pick pick = role == null ? null : choose(role, x, z);
+        String shape = pick == null ? "-" : BiomeCatalog.get(pick.biome).path() + "/" + BiomeCatalog.get(pick.biome).shape() + " w=" + String.format(java.util.Locale.ROOT, "%.2f", pick.weight)
+                + " shaped=" + String.format(java.util.Locale.ROOT, "%.1f", shapeTerrain(x, z, b.height, BiomeCatalog.get(pick.biome).shape(), pick.weight, new Column()));
+        return String.format(java.util.Locale.ROOT, "base %.1f valley %.1f mountain %.2f giant %.2f corridor %.2f role %s pick %s noLakes %.1f final %.1f",
+                b.height, b.valley, b.mountain, giantMask(x, z), riverCorridor(x, z), role, shape, noLakes.height, column(x, z).height) + riverLog;
+    }
+
+    /** River corridor strength at a column, for tools. */
+    public double corridor(double x, double z) {
+        return riverCorridor(x, z);
+    }
+
+    private double corridorAt(int ix, int iz) {
+        long key = ((long) ix << 32) ^ (iz & 0xFFFFFFFFL);
+        var hit = corridorCache.get(key);
+        if (hit != null) return hit.value()[0];
+        double x = (double) ix * CORRIDOR_GRID;
+        double z = (double) iz * CORRIDOR_GRID;
+        double best = 0;
+        for (int k = 0; k < riverLayers.length; k++) {
+            double width = riverWidths[k];
+            double reach = 700 + 5 * width;
+            // The course without its meanders: a smooth field, so the valley is smooth (the meanders, a couple of river
+            // widths to each side, stay inside it). The meandering field made the corridor jump from cell to cell.
+            double n = riverCourse(k, x, z);
+            // No cheap reject on the field value: any bound cut the valley off mid-slope somewhere (a cliff). The grid
+            // keeps this affordable.
+            double e = 16;
+            double fx = (riverCourse(k, x + e, z) - n) / e;
+            double fz = (riverCourse(k, x, z + e) - n) / e;
+            double dist = Math.abs(n) / Math.max(Math.sqrt(fx * fx + fz * fz), 1e-7);
+            best = Math.max(best, smooth(reach, reach * 0.22, dist));
+        }
+        corridorCache.put(key, new double[]{best});
+        return best;
+    }
+
+    private double valley(double x, double z) {
+        double l = land(x, z);
+        return l < 0 ? sea : valley(x, z, l);
+    }
+
+    /** Strength of a giant range at a column (0 outside); px, pz are the warped coordinates of {@link #base}. */
+    private double giantMask(double x, double z, double l, double px, double pz) {
+        // Stretched along a direction that turns slowly: long cordilleras, not rings.
+        double turn = 0.9 * warpX.sample(x - 9000, z + 4000, 90000);
+        double ga = Math.cos(turn) * px + Math.sin(turn) * pz;
+        double gb = -Math.sin(turn) * px + Math.cos(turn) * pz;
+        return smooth(0.6, 0.8, giantBelt.ridged(ga * 0.35, gb, 42000)) * smooth(0.12, 0.5, l);
+    }
+
+    /** Strength of a giant range at a column, for tools (0 outside, 1 in the core). */
+    public double giantMask(double x, double z) {
+        double l = land(x, z);
+        if (l < 0) return 0;
+        double pw = 1100;
+        double px = x + pw * warpX.sample(x + 7100, z - 2300, 4200);
+        double pz = z + pw * warpZ.sample(x - 5300, z + 6100, 4200);
+        return giantMask(x, z, l, px, pz);
     }
 
     /** Deterministic single-island profile. Returns NaN outside the island's influence. */
@@ -441,7 +634,7 @@ public final class TerrainEngine {
 
         // ---- biome region selection and biome-driven shaping
         double elevation = h - sea;
-        double tEff = t0 - Math.max(0, elevation - 30) / 110.0;
+        double tEff = cooled(t0, elevation);
         Role role = landRole(h, b);
         Pick pick = role == null ? null : choose(role, x, z);
         double shaped = h;
@@ -456,7 +649,7 @@ public final class TerrainEngine {
             col.rings = pick.weight;
         }
         h = shaped;
-        col.jag = Math.min(1, col.jag + 0.55 * b.mountain + 0.15 * b.hilliness);
+        col.jag = Math.min(1, col.jag + 0.4 * b.mountain * b.mountain + 0.1 * b.hilliness);
 
         // ---- willow swamp (bayou): a rare, large flat wetland of shallow pools and low islands
         if (biomes.on("willow_swamp") && b.land > 0.02 && h > sea - 4 && h < sea + 30) {
@@ -495,18 +688,25 @@ public final class TerrainEngine {
 
         // ---- rivers
         boolean riverHere = false;
-        if (settings.rivers().enabled() && b.land > -0.06 && (lakeHit == null || lakeHit.level <= sea || !lakeHit.near)) {
-            double carved = rivers(x, z, h, b.land, t0, h0, col);
-            if (carved < h) {
-                riverHere = carved < sea - 0.5 && b.land > -0.02;
-                h = carved;
-            }
+        if (settings.rivers().enabled() && b.land > -0.06 && (lakeHit == null || lakeHit.level <= sea || !lakeHit.inside)) {
+            // The river fades out only where the land itself rises into highlands; mountains and plateau shapes on it
+            // are crossed by a gorge or a tunnel as before.
+            double carved = rivers(x, z, h, b.land, t0, h0, b.valley, col);
+            boolean cut = carved < h;
+            if (cut) h = carved;
+            // No overhangs or spires of the 3D relief noise over the water or its banks.
+            if (cut || col.riverChannels != 0) col.jag = 0;
+            riverHere = (cut || col.riverChannels != 0) && h < sea - 0.5 && b.land > -0.02;
         }
 
+        // Soft ceiling: the last couple of hundred blocks under the top of the generator rise ever slower, so peaks stay
+        // peaks instead of being cut flat at the limit.
+        double knee = top - 220;
+        if (h > knee) h = knee + 180 * Math.tanh((h - knee) / 180);
         h = Math.max(minY + 14, Math.min(top - 10, h));
         col.height = h;
         elevation = h - sea;
-        tEff = t0 - Math.max(0, elevation - 30) / 110.0;
+        tEff = cooled(t0, elevation);
         col.temperature = tEff;
         int tl = level(tEff, T_LEVELS);
         int hl = level(h0, H_LEVELS);
@@ -556,6 +756,11 @@ public final class TerrainEngine {
         return col;
     }
 
+    /** Temperature at an elevation: cools from 150 blocks above the sea; snow from about 550 in a temperate climate. */
+    private static double cooled(double t0, double elevation) {
+        return t0 - Math.max(0, elevation - 150) / 330.0;
+    }
+
     private boolean isShore(double h, Base b, LakeHit lakeHit) {
         if (lakeHit != null && lakeHit.shore && h < lakeHit.level + 2.5 && lakeHit.radius >= 100) return true;
         return h < sea + 3 + 2.5 * detail.first(b.land * 9000, h, 1) && b.land < 0.12;
@@ -579,8 +784,9 @@ public final class TerrainEngine {
         if (h < sea) return null;
         double e = h - sea;
         double span = top - sea;
-        if (e > 0.62 * span && b.mountain > 0.3) return Role.PEAK;
-        if (e > 0.36 * span && b.mountain > 0.12) return Role.SLOPE;
+        // Absolute heights in tall worlds: peaks start where the trees end, not at a share of the world.
+        if (e > Math.min(0.62 * span, 520) && b.mountain > 0.3) return Role.PEAK;
+        if (e > Math.min(0.36 * span, 260) && b.mountain > 0.12) return Role.SLOPE;
         if (e > 58 || (b.hilliness > 0.6 && e > 32)) return Role.HIGHLAND;
         return Role.LOWLAND;
     }
@@ -1125,6 +1331,10 @@ public final class TerrainEngine {
                         double bump = smooth(0.5, 0.75, specialNoise.sample(x + s.cx, z, Math.max(40, s.radius * 0.33)));
                         bed = Math.max(bed, lerp(bump * smooth(0.15, 0.4, q) * smooth(1, 0.75, q), bed, s.level + 3));
                     }
+                    // Ground far above the water is not cut away: the lake ends at the foot of a slope instead of cutting
+                    // a sheer wall into a mountain that its basin reaches.
+                    double cut = smooth(s.level + 40, s.level + 12, h);
+                    if (cut <= 0) continue;
                     double carved = Math.min(h, bed);
                     // Shallow margin: shore of the lake slopes into the water instead of a cliff. Marble lakes keep
                     // their cliffs and get rock islets.
@@ -1133,6 +1343,7 @@ public final class TerrainEngine {
                     } else {
                         carved = Math.min(carved, s.level + 0.5 + (q - 0.96) * 60);
                     }
+                    carved = lerp(cut, h, carved);
                     return new LakeHit(carved, s.level, carved < s.level, false, true, s.radius, s, q);
                 }
                 if (s.level > sea) {
@@ -1169,6 +1380,23 @@ public final class TerrainEngine {
         return riverLayers[layer].sample(mx, mz, p);
     }
 
+    /** The large-scale course of a river layer: {@link #riverField} without the meanders. */
+    private double riverCourse(int layer, double x, double z) {
+        double p = riverPeriods[layer];
+        double rx = x + 0.2 * p * riverWarpX.sample(x, z, p * 0.7);
+        double rz = z + 0.2 * p * riverWarpZ.sample(x, z, p * 0.7);
+        return riverLayers[layer].sample(rx, rz, p);
+    }
+
+    /** Distance in blocks to the large-scale course of a river layer (no meanders), from the field and its gradient. */
+    private double courseDistance(int layer, double x, double z) {
+        double n = riverCourse(layer, x, z);
+        double e = 8;
+        double gx = (riverCourse(layer, x + e, z) - n) / e;
+        double gz = (riverCourse(layer, x, z + e) - n) / e;
+        return Math.abs(n) / Math.max(Math.sqrt(gx * gx + gz * gz), 1e-7);
+    }
+
     /** Distance in blocks to the centre line of a river layer, estimated from the field and its gradient. */
     private double riverDistance(int layer, double x, double z) {
         double n = riverField(layer, x, z);
@@ -1189,7 +1417,7 @@ public final class TerrainEngine {
         return sb.toString();
     }
 
-    private double rivers(double x, double z, double h, double land, double temperature, double humidity, Column col) {
+    private double rivers(double x, double z, double h, double land, double temperature, double humidity, double valleyHere, Column col) {
         var r = settings.rivers();
         double e = Math.max(0, h - sea);
         double estuary = 1 + 0.9 * smooth(0.08, 0.0, land);
@@ -1204,8 +1432,13 @@ public final class TerrainEngine {
             // they flow in as two tributaries at different places instead of crossing.
             double rx = x;
             double rz = z;
-            // Cheap reject first: the bend moves the river by at most a few hundred blocks, far less than its period.
-            if (Math.abs(riverField(k, x, z)) > 0.55) continue;
+            // Cheap reject first: the bend moves the river by at most a few hundred blocks, far less than its period. Not
+            // where the land stands high above the valley: the banks of a deep gorge reach so far that the bound would cut
+            // them off mid-slope (a sheer wall).
+            if (h - valleyHere < 120 && Math.abs(riverField(k, x, z)) > 0.55) {
+                if (DEBUG_RIVERS.get() != null) DEBUG_RIVERS.get().append(String.format(java.util.Locale.ROOT, "%n    layer %d skipped: field", k));
+                continue;
+            }
             if (r.connectedNetworks()) {
                 for (int j = 0; j < k; j++) {
                     if (probes[j] == null) probes[j] = riverProbe(j, x, z);
@@ -1220,15 +1453,31 @@ public final class TerrainEngine {
             // Fixed per river: the slow width field changes by at most width_variation along its course.
             double variation = r.widthVariation() * riverWidth.sample(x + k * 7919, z, riverPeriods[k] * 3);
             double half = width * 0.5 * (1 + variation) * estuary;
-            double bank = r.allowMountainGorges() ? 10 + 0.38 * e + width * 0.5 : 24 + 1.25 * e + width;
+            double above = Math.max(0, h - sea);
+            // Deep gorges widen so their walls stay steep but not sheer; at most ~320 blocks, as far as the distance to
+            // the river is reliable (further out the estimate jumps and the slope would break into walls). Under higher
+            // mountains the river takes a tunnel (see tunnelWeight).
+            double bank = r.allowMountainGorges() ? Math.min(320, 10 + 0.38 * above + 0.5 * Math.max(0, above - 150)) + width * 0.5
+                    : Math.min(320, 24 + 1.25 * above) + width;
             // Quick reject on the raw field before paying for the gradient.
             double reachBlocks = half + bank;
             double field = Math.abs(riverField(k, rx, rz));
-            if (field > 0.35 && reachBlocks < riverPeriods[k] * 0.06) continue;
+            if (field > 0.35 && reachBlocks < riverPeriods[k] * 0.06) {
+                if (DEBUG_RIVERS.get() != null) DEBUG_RIVERS.get().append(String.format(java.util.Locale.ROOT, "%n    layer %d skipped: quick %.2f reach %.0f", k, field, reachBlocks));
+                continue;
+            }
             double dist = riverDistance(k, rx, rz);
+            // Far out on the banks of a deep gorge the estimate from the meandering field jumps (its gradient swings with
+            // the meanders): there the smooth course gives the distance, close to the water the meanders do.
+            double near = 4 * (width + 10);
+            if (reachBlocks > near) {
+                double course = courseDistance(k, rx, rz);
+                dist = lerp(smooth(near, 2.5 * near, course), dist, course);
+            }
             if (!r.connectedNetworks() && largerReach < 1.4 && k < riverLayers.length - 1) continue;
             if (dist >= reachBlocks) {
                 largerReach = Math.min(largerReach, dist / reachBlocks);
+                if (DEBUG_RIVERS.get() != null) DEBUG_RIVERS.get().append(String.format(java.util.Locale.ROOT, "%n    layer %d skipped: dist %.0f >= reach %.0f", k, dist, reachBlocks));
                 continue;
             }
             largerReach = Math.min(largerReach, dist / reachBlocks);
@@ -1239,23 +1488,36 @@ public final class TerrainEngine {
                 double gate = 0.5 + 1.2 * riverWidth.sample(x - 4111 * k, z + 2237 * k, riverPeriods[k] * 0.8);
                 wet = smooth(share + 0.06, share - 0.06, gate);
             }
-            double keep = wet;
+            double keep = wet * smooth(130, 35, valleyHere - sea);
             // Where the climate dried the river up, its bed is left: a shallow dry channel above the water table.
             double dry = 1 - wet;
-            if (dry > 0.02 && biomes.on("dry_riverbed")) carved = Math.min(carved, dryBed(h, e, dist, half, bank, dry, col));
-            if (keep <= 0) continue;
+            // The river flows at the height of its valley, the same across its width: taken at the centre line and
+            // in steps of a few blocks (rapids, and waterfalls where the valley drops off an escarpment).
+            // Rivers flow at sea level (Minecraft water cannot run downhill). Where the valley climbs into the
+            // highlands the river fades out: a dry, ever shallower valley up to its source.
+            double surface0 = sea;
+            if (dry > 0.02 && biomes.on("dry_riverbed")) {
+                carved = Math.min(carved, dryBed(h, Math.max(0, h - surface0), dist, half, bank, dry, col, surface0));
+            }
+            if (keep <= 0) {
+                if (DEBUG_RIVERS.get() != null) DEBUG_RIVERS.get().append(String.format(java.util.Locale.ROOT, "%n    layer %d skipped: keep %.2f", k, keep));
+                continue;
+            }
             double depth = r.depthScalesWithWidth() ? Math.max(3, Math.min(48, 2 + width * 0.14)) : 6;
             depth = Math.min(depth, sea - minY - 16);
-            double tunnel = r.mountainTunnels() && r.allowMountainGorges() && k > 0 && keep > 0.5 && e > 12
-                    ? tunnelWeight(k, rx, rz, dist, width) : 0;
+            // Whether the river tunnels does not depend on how much of it is kept (faded or dried up): a threshold there
+            // switched between an untouched slope and a half-deep gorge from one column to the next.
+            double tunnel = r.mountainTunnels() && r.allowMountainGorges() && k > 0 && h - surface0 > 12
+                    ? tunnelWeight(k, rx, rz, dist, width, surface0) : 0;
             double value;
             if (dist < half) {
-                if (keep > 0.5) col.riverChannels |= 1 << k;
+                col.riverKeep = Double.isNaN(col.riverKeep) ? keep : Math.min(col.riverKeep, keep);
+                if (keep > 0.95) col.riverChannels |= 1 << k;
                 double t = dist / half;
-                value = sea - 0.6 - depth * (1 - t * t) * (0.85 + 0.15 * detail.sample(x, z, 60));
+                value = surface0 - 0.6 - depth * (1 - t * t) * (0.85 + 0.15 * detail.sample(x, z, 60));
             } else {
                 double t = (dist - half) / bank;
-                value = lerp(smooth(0, 1, t), sea + 1.1, h);
+                value = lerp(smooth(0, 1, t), surface0 + 1.1, h);
             }
             double open = lerp(keep, h, value);
             if (tunnel > 0) {
@@ -1265,12 +1527,12 @@ public final class TerrainEngine {
                 double tunnelHalf = half * 1.15 + 3;
                 if (dist < tunnelHalf) {
                     double t = dist / tunnelHalf;
-                    double ceiling = sea + 1 + arch * Math.sqrt(1 - t * t) * (0.85 + 0.15 * rough.sample(x, z, 18));
+                    double ceiling = surface0 + 1 + arch * Math.sqrt(1 - t * t) * (0.85 + 0.15 * rough.sample(x, z, 18));
                     // The arch is cut also where the river is still open (the tunnel mouth): the steep ground next to
                     // the gorge would otherwise leave spikes and a raised bed in the way.
                     // Where tunnels of two rivers overlap: the highest arch and the lowest bed, so no ledge of one
                     // stands in the channel of the other.
-                    double floor = dist < half ? value : sea + 1;
+                    double floor = dist < half ? value : surface0 + 1;
                     if (col.tunnelKind == 0 || col.tunnelKind == TUNNEL_MARBLE) {
                         col.tunnelTop = ceiling;
                         col.tunnelFloor = floor;
@@ -1285,12 +1547,17 @@ public final class TerrainEngine {
                     continue;
                 }
                 carved = Math.min(carved, surface);
+                if (DEBUG_RIVERS.get() != null) DEBUG_RIVERS.get().append(String.format(java.util.Locale.ROOT,
+                        "%n    layer %d (tunnel approach) dist %.0f half %.0f bank %.0f tunnel %.2f value %.1f surface %.1f", k, dist, half, bank, tunnel, value, surface));
                 continue;
             }
             carved = Math.min(carved, open);
+            if (DEBUG_RIVERS.get() != null) DEBUG_RIVERS.get().append(String.format(java.util.Locale.ROOT,
+                    "%n    layer %d dist %.0f half %.0f bank %.0f keep %.2f tunnel %.2f value %.1f open %.1f", k, dist, half, bank, keep, tunnel, value, open));
         }
-        // Deltas: braided channels on very low coastal plains.
-        if (land > 0 && land < 0.09 && e < 7) {
+        // Deltas: braided channels on very low coastal plains, only at a river mouth (alone on a coast they were short
+        // dead-end ditches).
+        if (land > 0 && land < 0.09 && e < 7 && largerReach < 4) {
             double d = Math.abs(delta.sample(x, z, 650));
             double strength = smooth(0.09, 0.02, land) * smooth(7, 2, e);
             double channel = 0.045 * strength;
@@ -1303,13 +1570,13 @@ public final class TerrainEngine {
      * Dry river bed: the valley of the river it replaces (same banks), with a flat floor a little above the water so it
      * never fills, and a shallow channel in the middle.
      */
-    private double dryBed(double h, double e, double dist, double half, double bank, double dry, Column col) {
-        double floor = sea + 2 + 0.12 * e;
+    private double dryBed(double h, double e, double dist, double half, double bank, double dry, Column col, double water) {
+        double floor = water + 2 + 0.12 * e;
         double channel = half * 0.8;
         double v;
         if (dist < channel) {
             double t = dist / channel;
-            v = Math.max(sea + 1.5, floor - 1.5 * (1 - t * t));
+            v = Math.max(water + 1.5, floor - 1.5 * (1 - t * t));
             if (dry > 0.5) col.dryRiver = true;
         } else if (dist < channel + bank) {
             v = lerp(smooth(0, 1, (dist - channel) / bank), floor, h);
@@ -1332,10 +1599,9 @@ public final class TerrainEngine {
      * above the river: the gorge gets shallower towards the mountain and the river enters a tunnel mouth in the slope.
      * Columns over the tunnel keep the mountain surface; the tunnel itself is cut by {@link EpicDensity}.
      */
-    private double tunnelWeight(int k, double x, double z, double dist, double width) {
+    private double tunnelWeight(int k, double x, double z, double dist, double width, double water) {
         // Which crossings tunnel changes slowly along the river, and smoothly, so no gorge ends in a sheer wall.
         double gate = smooth(-0.05, 0.2, riverWidth.sample(x + 1777 * k, z - 913 * k, 2400));
-        if (gate <= 0) return 0;
         double n = riverField(k, x, z);
         double gx = (riverField(k, x + 3, z) - n) / 3;
         double gz = (riverField(k, x, z + 3) - n) / 3;
@@ -1343,7 +1609,10 @@ public final class TerrainEngine {
         if (g < 1e-9) return 0;
         double sign = Math.signum(n);
         Base above = base(x - sign * gx / g * dist, z - sign * gz / g * dist);
-        double rise = above.height - sea;
+        double rise = above.height - water;
+        // Under the highest ranges the river mostly goes underground instead of cutting a gorge a kilometre deep.
+        gate = Math.max(gate, smooth(150, 350, rise));
+        if (gate <= 0) return 0;
         double arch = Math.max(8, Math.min(36, 7 + width * 0.3));
         // Only under real mountains: in hills the river keeps its valley.
         double start = Math.max(arch + 14, above.mountain > 0.2 ? 60 : 90);
@@ -1361,7 +1630,12 @@ public final class TerrainEngine {
         double gx = (riverField(j, x + e, z) - n) / e;
         double gz = (riverField(j, x, z + e) - n) / e;
         double g = Math.max(Math.sqrt(gx * gx + gz * gz), 1e-7);
-        return new double[]{n, Math.abs(n) / g, -gz / g, gx / g};
+        double dist = Math.abs(n) / g;
+        // Away from the water the meandering field gives a jumpy distance; the smooth course takes over there, so the
+        // bend of a tributary (and its gorge) does not jerk from one column to the next.
+        double near = 4 * (riverWidths[j] + 10);
+        if (dist > near) dist = lerp(smooth(near, 2.5 * near, dist), dist, courseDistance(j, x, z));
+        return new double[]{n, dist, -gz / g, gx / g};
     }
 
     private static final double DELTA_SLIVER = 16;

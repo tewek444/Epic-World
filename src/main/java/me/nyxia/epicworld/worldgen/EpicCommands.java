@@ -20,6 +20,7 @@ import net.minecraft.world.level.storage.LevelResource;
  * {@code /epicworld info} — what the generator knows about the current column and where the settings live.
  * {@code /epicworld locate <biome>} — nearest surface or cave biome region, searched far beyond vanilla /locate.
  * {@code /epicworld locate tunnel <plain|glowing|glowworms>} — nearest river tunnel through a mountain.
+ * {@code /epicworld check <x> <z> <radius>} — generates chunks there and counts blocked rivers, needles and thin overhangs.
  */
 public final class EpicCommands {
     private EpicCommands() {}
@@ -60,6 +61,14 @@ public final class EpicCommands {
                 .then(Commands.literal("benchmark").then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 32))
                         .executes(c -> me.nyxia.epicworld.dev.GenerationBenchmark.start(c.getSource(),
                                 com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "radius")))))
+                .then(Commands.literal("check")
+                        .then(Commands.argument("x", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                .then(Commands.argument("z", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                        .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 16))
+                                                .executes(c -> me.nyxia.epicworld.dev.TerrainCheck.run(c.getSource(),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "x"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "z"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "radius")))))))
                 .then(Commands.literal("locate").then(Commands.literal("tunnel")
                                 .then(Commands.literal("plain").executes(c -> locateTunnel(c, TerrainEngine.TUNNEL_PLAIN, "plain")))
                                 .then(Commands.literal("glowing").executes(c -> locateTunnel(c, TerrainEngine.TUNNEL_GLOWING, "glowing")))

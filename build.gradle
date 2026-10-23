@@ -266,3 +266,19 @@ tasks.named("jar", Jar).configure {
         buildNumberFile.text = "${buildNumber + 1}"
     }
 }
+
+// Perspective landscape views from the terrain engine (no Minecraft): -Pviews="seed:x,z,yaw,pitch,altitude;..." or "seed:auto".
+tasks.register('renderTerrainView', JavaExec) {
+    group = 'epicworld'
+    dependsOn 'classes'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'me.nyxia.epicworld.dev.TerrainView'
+    args = [file('build/reports/terrain').absolutePath]
+    maxHeapSize = '3G'
+    // Keep the PC cool: a few threads are plenty for a still image.
+    jvmArgs '-Djava.util.concurrent.ForkJoinPool.common.parallelism=4'
+    if (project.hasProperty('noCorridors')) systemProperty 'epicworld.noCorridors', 'true'
+    if (project.hasProperty('views')) systemProperty 'epicworld.views', project.property('views')
+    if (project.hasProperty('findAbove')) systemProperty 'epicworld.findAbove', project.property('findAbove')
+    notCompatibleWithConfigurationCache('dev tool')
+}

@@ -65,6 +65,52 @@ public final class Simplex2 {
         return 70.0 * n;
     }
 
+    /**
+     * Noise value with its gradient: {@code out[0]} = d/dx, {@code out[1]} = d/dy (in noise units). Same value as
+     * {@link #sample}.
+     */
+    public double sampleWithGradient(double x, double y, double[] out) {
+        x += offsetX;
+        y += offsetY;
+        double s = (x + y) * F2;
+        int i = floor(x + s);
+        int j = floor(y + s);
+        double t = (i + j) * G2;
+        double x0 = x - (i - t);
+        double y0 = y - (j - t);
+        int i1 = x0 > y0 ? 1 : 0;
+        int j1 = 1 - i1;
+        double x1 = x0 - i1 + G2;
+        double y1 = y0 - j1 + G2;
+        double x2 = x0 - 1 + 2 * G2;
+        double y2 = y0 - 1 + 2 * G2;
+        int ii = i & 255;
+        int jj = j & 255;
+        out[0] = 0;
+        out[1] = 0;
+        double n = cornerWithGradient(grad[ii + perm[jj]], x0, y0, out)
+                + cornerWithGradient(grad[ii + i1 + perm[jj + j1]], x1, y1, out)
+                + cornerWithGradient(grad[ii + 1 + perm[jj + 1]], x2, y2, out);
+        out[0] *= 70.0;
+        out[1] *= 70.0;
+        return 70.0 * n;
+    }
+
+    private static double cornerWithGradient(int g, double x, double y, double[] out) {
+        double t = 0.5 - x * x - y * y;
+        if (t <= 0) return 0;
+        double gx = GX[g];
+        double gy = GY[g];
+        double dot = gx * x + gy * y;
+        double t2 = t * t;
+        double t4 = t2 * t2;
+        // d/dx of t^4 * dot = -8 t^3 x dot + t^4 gx.
+        double k = -8 * t2 * t * dot;
+        out[0] += k * x + t4 * gx;
+        out[1] += k * y + t4 * gy;
+        return t4 * dot;
+    }
+
     private static double corner(int g, double x, double y) {
         double t = 0.5 - x * x - y * y;
         if (t <= 0) return 0;

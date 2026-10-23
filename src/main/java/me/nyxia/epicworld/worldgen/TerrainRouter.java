@@ -37,8 +37,11 @@ final class TerrainRouter {
 
         var terrain = epic(EpicDensity.Output.TERRAIN, settingsHolder, seed);
         var jag = flatCache(epic(EpicDensity.Output.JAGGEDNESS, settingsHolder, seed));
-        // Up to ~16 blocks of 3D overhangs and spires on mountains; nothing on plains and coasts.
-        var relief = mul(constant(0.65), mul(jag.square(), noise(noise.getOrThrow(Noises.JAGGED), 0.8, 0.45)));
+        // A few blocks of 3D overhangs and crags on mountains; nothing on plains and coasts. The old, finer noise (xz 0.8)
+        // made needles one block thick; -Depicworld.oldRelief=true keeps it for comparisons.
+        var relief = Boolean.getBoolean("epicworld.oldRelief")
+                ? mul(constant(0.65), mul(jag.square(), noise(noise.getOrThrow(Noises.JAGGED), 0.8, 0.45)))
+                : mul(constant(0.45), mul(jag.square(), noise(noise.getOrThrow(Noises.JAGGED), 0.3, 0.25)));
         var slopedCheese = add(terrain, relief);
 
         var entrances = entrances(noise);

@@ -115,7 +115,7 @@ public record EpicSettings(World world, Biomes biomes, Rivers rivers, Lakes lake
             Compatibility.CODEC.fieldOf("compatibility").forGetter(EpicSettings::compatibility)).apply(i, EpicSettings::new));
 
     public static final EpicSettings DEFAULT = new EpicSettings(
-            new World(-64, 448, 1024, 208),
+            new World(-64, 1600, 2032, 304),
             new Biomes(1.0, Map.of()),
             new Rivers(true, 16, 256, 0.2, true, true, true, true),
             new Lakes(true, 32, 512, 256, true, true, true),
