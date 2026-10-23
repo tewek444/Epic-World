@@ -62,26 +62,37 @@ public final class VoxyBridge {
     }
 
     /**
-     * Queues the sections of a whole chunk (skipping air and a deferred placeholder depth below its first section).
+     * Queues the sections of a whole chunk (skipping air and a deferred placeholder depth below its first section), with
+     * the chunk's real light where the level has it.
      */
     public static void ingestChunk(Level level, net.minecraft.world.level.chunk.ChunkAccess chunk) {
         Object world = world(level);
         if (world == null) return;
         int floor = me.nyxia.epicworld.worldgen.deferred.DeferredDepth.placeholderTop(chunk);
         var pos = chunk.getPos();
+        var sections = new java.util.ArrayList<LodPayloads.Section>();
         for (int i = 0; i < chunk.getSectionsCount(); i++) {
             var section = chunk.getSection(i);
             if (section.hasOnlyAir()) continue;
             int sectionY = chunk.getSectionYFromSectionIndex(i);
             if (floor != Integer.MIN_VALUE && (sectionY + 1) * 16 <= floor - 16) continue;
-            ingest(world, section, pos.x, sectionY, pos.z);
+            sections.add(new LodPayloads.Section(sectionY, section));
+        }
+        var computed = SkyLight.compute(sections);
+        var light = level.getLightEngine();
+        for (var s : sections) {
+            var sectionPos = net.minecraft.core.SectionPos.of(pos.x, s.y(), pos.z);
+            DataLayer sky = light.getLayerListener(net.minecraft.world.level.LightLayer.SKY).getDataLayerData(sectionPos);
+            DataLayer block = light.getLayerListener(net.minecraft.world.level.LightLayer.BLOCK).getDataLayerData(sectionPos);
+            ingest(world, s.section(), pos.x, s.y(), pos.z, block, sky != null ? sky : computed.get(s.y()));
         }
     }
 
-    /** Queues one section (absolute section Y) for LOD building; false if Voxy refused it. */
-    public static boolean ingest(Object world, LevelChunkSection section, int chunkX, int sectionY, int chunkZ) {
+    /** Queues one section (absolute section Y) for LOD building with the given light; false if Voxy refused it. */
+    public static boolean ingest(Object world, LevelChunkSection section, int chunkX, int sectionY, int chunkZ,
+                                 @Nullable DataLayer blockLight, @Nullable DataLayer skyLight) {
         try {
-            return (boolean) rawIngest.invoke(world, section, chunkX, sectionY, chunkZ, (DataLayer) null, FULL_SKY);
+            return (boolean) rawIngest.invoke(world, section, chunkX, sectionY, chunkZ, blockLight, skyLight != null ? skyLight : FULL_SKY);
         } catch (Throwable e) {
             return false;
         }

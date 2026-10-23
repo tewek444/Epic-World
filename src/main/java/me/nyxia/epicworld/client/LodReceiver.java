@@ -16,6 +16,12 @@ public final class LodReceiver {
     private LodReceiver() {}
 
     private static final AtomicLong RECEIVED = new AtomicLong();
+    private static final java.util.concurrent.ExecutorService WORKER = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "Epic World LOD light");
+        t.setDaemon(true);
+        t.setPriority(Thread.MIN_PRIORITY);
+        return t;
+    });
     private static final long[] HISTORY = new long[6];
     private static long lastSample;
 
@@ -33,7 +39,13 @@ public final class LodReceiver {
         if (level == null || !level.dimension().location().equals(payload.dimension())) return;
         Object world = VoxyBridge.world(level);
         if (world == null) return;
-        for (LodPayloads.Section s : payload.sections()) VoxyBridge.ingest(world, s.section(), payload.x(), s.y(), payload.z());
+        // Off the game thread: light per section, then Voxy's own queue takes them.
+        WORKER.execute(() -> {
+            var light = me.nyxia.epicworld.voxy.SkyLight.compute(payload.sections());
+            for (LodPayloads.Section s : payload.sections()) {
+                VoxyBridge.ingest(world, s.section(), payload.x(), s.y(), payload.z(), null, light.get(s.y()));
+            }
+        });
         RECEIVED.incrementAndGet();
     }
 
